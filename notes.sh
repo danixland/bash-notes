@@ -81,7 +81,7 @@ __NOWCONF__
     echo "  -l | --list			: List existing notes"
     echo "  -a | --add <title>		: Add new note"
     echo "  -m | --modify <note> 		: Modify note"
-    echo "  -d | -date <note> 		: Modify date for note"
+    echo "  -d | --date <note> 		: Modify date for note"
     echo "  -r | --remove <note>		: Remove note"
     echo "  -v | --version		: Print version"
     echo "  --userconf			: Export User config file"
