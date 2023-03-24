@@ -97,11 +97,27 @@ function addnote() {
 }
 
 function listnotes() {
-	echo "list all notes"
+	echo "listing all notes"
+	echo ""
+	echo "[ID]	[TITLE]"
+	for i in ${NOTESDIR}/*; do
+		TITLE=$($JQ -r --arg z $(basename $i) '.notes[] | select(.file == $z) | .title' $DB)
+		ID=$($JQ -r --arg z $(basename $i) '.notes[] | select(.file == $z) | .id' $DB)
+
+		echo "[${ID}]	${TITLE}"
+	done
 }
 
 function editnote() {
-	echo "edit note \"${1}\""
+	TITLE=$($JQ --arg i $1 '.notes[] | select(.id == $i) | .title' $DB)
+	FILE=$($JQ -r --arg i $1 '.notes[] | select(.id == $i) | .file' $DB)
+	if [ "$TITLE" ]; then
+		echo "editing note $TITLE"
+		$(${TERMINAL} --class notes --title notes -e ${EDITOR} ${NOTESDIR}/${FILE})
+	else
+		 echo "note not found"
+		 exit 1
+	fi
 }
 
 function datenote() {
