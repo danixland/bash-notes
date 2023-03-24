@@ -58,7 +58,7 @@ echo $PID > $PIDFILE
 
 function helptext() {
     echo "Usage:"
-    echo "  $0 [OPTION] ..."
+    echo "  $0 [PARAMS] ..."
     echo ""
 	cat << __NOWCONF__ 
 ${BASENAME} configuration is:
@@ -67,6 +67,7 @@ base directory:		${BASEDIR}/
 notes archive:		${NOTESDIR}/
 notes database:		${DB}
 rc file:		$RCFILE
+
 text editor:		${EDITOR}
 terminal:		${TERMINAL}
 jq executable:		${JQ}
@@ -75,6 +76,8 @@ __NOWCONF__
 	echo ""
     echo "The script's parameters are:"
     echo "  -h | --help			: This help text"
+    echo "  -p | --plain			: Output is in plain text"
+    echo "				  (without this option the output is colored)"
     echo "  -l | --list			: List existing notes"
     echo "  -a | --add <title>		: Add new note"
     echo "  -m | --modify <note> 		: Modify note"
@@ -98,6 +101,7 @@ function addnote() {
 
 function listnotes() {
 	echo "listing all notes"
+	[ $PLAIN == true ] && echo "output is plain text" || echo "output is colored"
 	echo ""
 	echo "[ID]	[TITLE]"
 	for i in ${NOTESDIR}/*; do
@@ -197,13 +201,15 @@ fi
 
 # NOTE: This requires GNU getopt.  On Mac OS X and FreeBSD, you have to install this
 # separately; see below.
-GOPT=`getopt -o hvla:m:d:r: --long help,version,list,userconf,add:,modify:,date:,remove:,editor:,storage: \
+GOPT=`getopt -o hvpla:m:d:r: --long help,version,list,plain,userconf,add:,modify:,date:,remove:,editor:,storage: \
              -n 'bash-notes' -- "$@"`
 
 if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
 
 # Note the quotes around `$GOPT': they are essential!
 eval set -- "$GOPT"
+
+PLAIN=false
 
 while true; do
 	case "$1" in
@@ -215,6 +221,10 @@ while true; do
 			echo $BASENAME v${VERSION}
 			exit
 			;;
+	    -p | --plain )
+			PLAIN=true
+			shift
+	        ;;
 	    -l | --list )
 			listnotes
 			exit
