@@ -34,7 +34,7 @@ And you'll have all your settings in `~/.config/bash-notes.rc`. This file will b
 
 You can change all these settings:
 
-```
+```bash
 # Binaries to use
 JQ=/usr/bin/jq
 EDITOR=/usr/bin/vim
@@ -70,7 +70,7 @@ The *note id* is assigned when the note is created, and that's how you refer to 
 
 The `--plain` or `-p` option in short, dictates how the output from the script is formatted, here's a sample listing of all the notes:
 
-```
+```bash
 notes.sh -l
 listing all notes
 
@@ -81,7 +81,7 @@ listing all notes
 
 And here's the same listing with the plain option:
 
-```
+```bash
 notes.sh -pl
 1 - ciao nota - 25/03/2023 18:53 +0100CET
 2 - hello there - 25/03/2023 19:02 +0100CET
@@ -96,7 +96,7 @@ I'd love to implement some kind of searching functionality, but I'll have to loo
 
 Simply copy the script in your $PATH and make it executable, something like this should work:
 
-```
+```bash
 mv notes.sh ~/bin/
 chmod 755 ~/bin/notes.sh
 ```
