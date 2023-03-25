@@ -56,6 +56,19 @@ fi
 # create PIDFILE
 echo $PID > $PIDFILE
 
+# check if input is a number, returns false or the number itself
+function check_noteID() {
+	IN=$1
+	case $IN in
+		''|*[!0-9]*)
+			return 1
+			;;
+		*)
+			echo $IN
+			;;
+	esac
+}
+
 function helptext() {
     echo "Usage:"
     echo "  $0 [PARAMS] ..."
@@ -113,8 +126,15 @@ function listnotes() {
 }
 
 function editnote() {
-	TITLE=$($JQ --arg i $1 '.notes[] | select(.id == $i) | .title' $DB)
-	FILE=$($JQ -r --arg i $1 '.notes[] | select(.id == $i) | .file' $DB)
+	NOTE=$1
+	local OK=$(check_noteID $NOTE)
+	if [ ! $OK ]; then
+		echo "invalid note \"$NOTE\""
+		exit 1
+	fi
+
+	TITLE=$($JQ --arg i $OK '.notes[] | select(.id == $i) | .title' $DB)
+	FILE=$($JQ -r --arg i $OK '.notes[] | select(.id == $i) | .file' $DB)
 	if [ "$TITLE" ]; then
 		echo "editing note $TITLE"
 		$(${TERMINAL} --class notes --title notes -e ${EDITOR} ${NOTESDIR}/${FILE})
@@ -125,14 +145,17 @@ function editnote() {
 }
 
 function datenote() {
-	echo "edit date for note \"${1}\""
+	NOTE=$1
+	local OK=$(check_noteID $NOTE)
+	[ $OK ] && echo "editing date for note $OK" || echo "invalid note \"$NOTE\""
 	# FILEDATE=$(date -d @$NOW +%d/%m/%Y_%T)
 
 }
 
 function rmnote() {
 	NOTE=$1
-	echo "removing note $NOTE"
+	local OK=$(check_noteID $NOTE)
+	[ $OK ] && echo "removing note $OK" || echo "invalid note \"$NOTE\""
 }
 
 function export_config() {
