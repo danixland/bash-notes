@@ -12,9 +12,9 @@ here's all the functions that I'm planning to implement:
 -h | --help			: This help text
 -p | --plain			: Output is in plain text (without this option the output is colored)
 -l | --list			: List existing notes
--a | --add <title>		: Add new note
+-a | --add "<title>"		: Add new note
 -m | --modify <note> 		: Modify note
--d | --delete <note> 		: Delete note
+-d | --delete [<note> | all]	: Delete note
 -v | --version			: Print version
 --userconf			: Export User config file
 ```

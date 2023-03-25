@@ -97,15 +97,20 @@ __NOWCONF__
     echo "				  (without this option the output is formatted)"
     echo "				  (this option must precede all others)"
     echo "  -l | --list			: List existing notes"
-    echo "  -a | --add <title>		: Add new note"
-    echo "  -m | --modify <note> 		: Modify note"
-    echo "  -d | --delete <note>		: Delete note"
+    echo "  -a | --add [\"<title>\"]	: Add new note"
+    echo "  -m | --modify [<note>] 	: Modify note"
+    echo "  -d | --delete [<note> | all]	: Delete single note or all notes at once"
     echo "  -v | --version		: Print version"
     echo "  --userconf			: Export User config file"
     echo ""
 }
 
 function addnote() {
+	# remove eventually existing temp DB file
+	if [[ -f $TMPDB ]]; then
+		rm $TMPDB
+	fi
+
 	NOTETITLE="$1"
 	echo "adding new note - \"$NOTETITLE\""
 	LASTID=$($JQ '.notes[-1].id // 0 | tonumber' $DB)
@@ -159,23 +164,45 @@ function editnote() {
 }
 
 function rmnote() {
-	NOTE=$1
-	local OK=$(check_noteID $NOTE)
-	if [ ! $OK ]; then
-		echo "invalid note \"$NOTE\""
-		exit 1
+	# remove eventually existing temp DB file
+	if [[ -f $TMPDB ]]; then
+		rm $TMPDB
 	fi
 
-	TITLE=$($JQ --arg i $OK '.notes[] | select(.id == $i) | .title' $DB)
-	FILE=$($JQ -r --arg i $OK '.notes[] | select(.id == $i) | .file' $DB)
-	if [ "$TITLE" ]; then
-	$JQ -r --arg i $OK 'del(.notes[] | select(.id == $i))' $DB > $TMPDB
-	mv $TMPDB $DB
-	rm $NOTESDIR/$FILE
-	echo "Deleted note $TITLE"
+	NOTE=$1
+	if [ "all" == $NOTE ]; then
+		echo "You're going to delete all notes."
+		read -r -p "Do you wish to continue? (y/N) " ANSWER
+		case $ANSWER in
+			y|Y )
+				$JQ 'del(.notes[])' $DB > $TMPDB
+				mv $TMPDB $DB
+				rm $NOTESDIR/*
+				echo "Deleted all notes"
+				;;
+			* )
+				echo "Aborting, no notes were deleted."
+				exit 1
+				;;
+		esac
 	else
-		 echo "note not found"
-		 exit 1
+		local OK=$(check_noteID $NOTE)
+		if [ ! $OK ]; then
+			echo "invalid note \"$NOTE\""
+			exit 1
+		fi
+
+		TITLE=$($JQ --arg i $OK '.notes[] | select(.id == $i) | .title' $DB)
+		FILE=$($JQ -r --arg i $OK '.notes[] | select(.id == $i) | .file' $DB)
+		if [ "$TITLE" ]; then
+		$JQ -r --arg i $OK 'del(.notes[] | select(.id == $i))' $DB > $TMPDB
+		mv $TMPDB $DB
+		rm $NOTESDIR/$FILE
+		echo "Deleted note $TITLE"
+		else
+			 echo "note not found"
+			 exit 1
+		fi
 	fi
 }
 
@@ -294,8 +321,8 @@ while true; do
 			exit
 			;;
 		-- )
-			helptext
-	        exit
+			shift
+			break
 			;;
 		* )
 			break
