@@ -9,6 +9,9 @@ set_defaults() {
 # Binaries to use
 EDITOR=${EDITOR:-/usr/bin/vim}
 TERMINAL=${TERMINAL:-/usr/bin/alacritty}
+# add options for your terminal. Remember to add the last option to execute
+# your editor program, otherwise the script will fail.
+# see example in the addnote function
 TERM_OPTS="--class notes --title notes -e "
 JQ=${JQ:-/usr/bin/jq}
 
@@ -91,12 +94,12 @@ __NOWCONF__
     echo "${BASENAME} parameters are:"
     echo "  -h | --help			: This help text"
     echo "  -p | --plain			: Output is in plain text"
-    echo "				  (without this option the output is colored)"
+    echo "				  (without this option the output is formatted)"
+    echo "				  (this option must precede all others)"
     echo "  -l | --list			: List existing notes"
     echo "  -a | --add <title>		: Add new note"
     echo "  -m | --modify <note> 		: Modify note"
-    echo "  -d | --date <note> 		: Modify date for note"
-    echo "  -r | --remove <note>		: Remove note"
+    echo "  -d | --delete <note>		: Delete note"
     echo "  -v | --version		: Print version"
     echo "  --userconf			: Export User config file"
     echo ""
@@ -111,21 +114,25 @@ function addnote() {
 	touch ${NOTESDIR}/${NOW}
 	$JQ --arg i "$NOTEID" --arg t "$NOTETITLE" --arg f "$NOW" '.notes += [{"id": $i, "title": $t, "file": $f}]' "$DB" > $TMPDB
 	mv $TMPDB $DB
+	# example for alacritty:
+	# alacritty --class notes --title notes -e /usr/bin/vim ...
 	$(${TERMINAL} ${TERM_OPTS} ${EDITOR} ${NOTESDIR}/${NOW})
 }
 
 function listnotes() {
 	# [ $PLAIN == true ] && echo "output is plain text" || echo "output is colored"
 	if [[ $(ls -A $NOTESDIR) ]]; then
-		echo "listing all notes"
-		echo ""
-		echo "[ID]	[TITLE]		[SIZE]"
+		if [ $PLAIN == false ]; then
+			echo "listing all notes"
+			echo ""
+		fi
+		[ $PLAIN == false ] && echo "[ID]	[TITLE]		[CREATED]"
 		for i in ${NOTESDIR}/*; do
-			SIZE=$(du -k $i |cut -f 1)
+			local fname=$(basename $i)
+			DATE=$(date -d @${fname} +"%d/%m/%Y %R %z%Z")
 			TITLE=$($JQ -r --arg z $(basename $i) '.notes[] | select(.file == $z) | .title' $DB)
 			ID=$($JQ -r --arg z $(basename $i) '.notes[] | select(.file == $z) | .id' $DB)
-
-			echo "[${ID}]	${TITLE}	${SIZE}kb"
+			[ $PLAIN == false ] && echo "[${ID}]	${TITLE}	${DATE}" || echo "${ID} - ${TITLE} - ${DATE}"
 		done
 	else
 		echo "no notes yet. You can add your first one with: ${BASENAME} -a \"your note title\""
@@ -144,25 +151,32 @@ function editnote() {
 	FILE=$($JQ -r --arg i $OK '.notes[] | select(.id == $i) | .file' $DB)
 	if [ "$TITLE" ]; then
 		echo "editing note $TITLE"
-		$(${TERMINAL} --class notes --title notes -e ${EDITOR} ${NOTESDIR}/${FILE})
+		$(${TERMINAL} ${TERM_OPTS} ${EDITOR} ${NOTESDIR}/${FILE})
 	else
 		 echo "note not found"
 		 exit 1
 	fi
 }
 
-function datenote() {
-	NOTE=$1
-	local OK=$(check_noteID $NOTE)
-	[ $OK ] && echo "editing date for note $OK" || echo "invalid note \"$NOTE\""
-	# FILEDATE=$(date -d @$NOW +%d/%m/%Y_%T)
-
-}
-
 function rmnote() {
 	NOTE=$1
 	local OK=$(check_noteID $NOTE)
-	[ $OK ] && echo "removing note $OK" || echo "invalid note \"$NOTE\""
+	if [ ! $OK ]; then
+		echo "invalid note \"$NOTE\""
+		exit 1
+	fi
+
+	TITLE=$($JQ --arg i $OK '.notes[] | select(.id == $i) | .title' $DB)
+	FILE=$($JQ -r --arg i $OK '.notes[] | select(.id == $i) | .file' $DB)
+	if [ "$TITLE" ]; then
+	$JQ -r --arg i $OK 'del(.notes[] | select(.id == $i))' $DB > $TMPDB
+	mv $TMPDB $DB
+	rm $NOTESDIR/$FILE
+	echo "Deleted note $TITLE"
+	else
+		 echo "note not found"
+		 exit 1
+	fi
 }
 
 function export_config() {
@@ -231,7 +245,7 @@ fi
 
 # NOTE: This requires GNU getopt.  On Mac OS X and FreeBSD, you have to install this
 # separately; see below.
-GOPT=`getopt -o hvpla:m:d:r: --long help,version,list,plain,userconf,add:,modify:,date:,remove:,editor:,storage: \
+GOPT=`getopt -o hvpla:m:d: --long help,version,list,plain,userconf,add:,modify:,delete:,editor:,storage: \
              -n 'bash-notes' -- "$@"`
 
 if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
@@ -269,12 +283,7 @@ while true; do
 			shift 2
 			editnote "$NOTE"
 			;;
-		-d | --date )
-			NOTE="$2"
-			shift 2
-			datenote "$NOTE"
-			;;
-		-r | --remove )
+		-d | --delete )
 			NOTE="$2"
 			shift 2
 			rmnote "$NOTE"

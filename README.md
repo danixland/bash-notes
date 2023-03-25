@@ -14,8 +14,7 @@ here's all the functions that I'm planning to implement:
 -l | --list			: List existing notes
 -a | --add <title>		: Add new note
 -m | --modify <note> 		: Modify note
--d | --date <note> 		: Modify date for note
--r | --remove <note>		: Remove note
+-d | --delete <note> 		: Delete note
 -v | --version			: Print version
 --userconf			: Export User config file
 ```
