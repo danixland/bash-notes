@@ -34,7 +34,7 @@ And you'll have all your settings in `~/.config/bash-notes.rc`. This file will b
 
 You can change all these settings:
 
-```Bash
+```
 # Binaries to use
 JQ=/usr/bin/jq
 EDITOR=/usr/bin/vim
@@ -59,6 +59,7 @@ Special attention is needed when specifying the options, in my case, using [alac
 ### Functionalities
 
 bash-notes can:
+
  * write a new note `--add "Your note title"` or in short `-a "Your note title"`
  * modify an existing note `--edit [note ID]`, short version `-e [note ID]`
  * delete a note `--delete [note ID]`, or `-d [note ID]`
