@@ -9,6 +9,7 @@ set_defaults() {
 # Binaries to use
 EDITOR=${EDITOR:-/usr/bin/vim}
 TERMINAL=${TERMINAL:-/usr/bin/alacritty}
+TERM_OPTS="--class notes --title notes -e "
 JQ=${JQ:-/usr/bin/jq}
 
 # base directory for program files
@@ -87,7 +88,7 @@ jq executable:		${JQ}
 __NOWCONF__
 
 	echo ""
-    echo "The script's parameters are:"
+    echo "${BASENAME} parameters are:"
     echo "  -h | --help			: This help text"
     echo "  -p | --plain			: Output is in plain text"
     echo "				  (without this option the output is colored)"
@@ -98,31 +99,37 @@ __NOWCONF__
     echo "  -r | --remove <note>		: Remove note"
     echo "  -v | --version		: Print version"
     echo "  --userconf			: Export User config file"
+    echo ""
 }
 
 function addnote() {
 	NOTETITLE="$1"
 	echo "adding new note - \"$NOTETITLE\""
-	LASTID=$($JQ '.notes[-1].id | tonumber' $DB)
-	[ null == $LASTID ] && LASTID=0
+	LASTID=$($JQ '.notes[-1].id // 0 | tonumber' $DB)
+	# [ "" == $LASTID ] && LASTID=0
 	NOTEID=$(( $LASTID + 1 ))
 	touch ${NOTESDIR}/${NOW}
 	$JQ --arg i "$NOTEID" --arg t "$NOTETITLE" --arg f "$NOW" '.notes += [{"id": $i, "title": $t, "file": $f}]' "$DB" > $TMPDB
 	mv $TMPDB $DB
-	$(${TERMINAL} --class notes --title notes -e ${EDITOR} ${NOTESDIR}/${NOW})
+	$(${TERMINAL} ${TERM_OPTS} ${EDITOR} ${NOTESDIR}/${NOW})
 }
 
 function listnotes() {
-	echo "listing all notes"
-	[ $PLAIN == true ] && echo "output is plain text" || echo "output is colored"
-	echo ""
-	echo "[ID]	[TITLE]"
-	for i in ${NOTESDIR}/*; do
-		TITLE=$($JQ -r --arg z $(basename $i) '.notes[] | select(.file == $z) | .title' $DB)
-		ID=$($JQ -r --arg z $(basename $i) '.notes[] | select(.file == $z) | .id' $DB)
+	# [ $PLAIN == true ] && echo "output is plain text" || echo "output is colored"
+	if [[ $(ls -A $NOTESDIR) ]]; then
+		echo "listing all notes"
+		echo ""
+		echo "[ID]	[TITLE]		[SIZE]"
+		for i in ${NOTESDIR}/*; do
+			SIZE=$(du -k $i |cut -f 1)
+			TITLE=$($JQ -r --arg z $(basename $i) '.notes[] | select(.file == $z) | .title' $DB)
+			ID=$($JQ -r --arg z $(basename $i) '.notes[] | select(.file == $z) | .id' $DB)
 
-		echo "[${ID}]	${TITLE}"
-	done
+			echo "[${ID}]	${TITLE}	${SIZE}kb"
+		done
+	else
+		echo "no notes yet. You can add your first one with: ${BASENAME} -a \"your note title\""
+	fi
 }
 
 function editnote() {
