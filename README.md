@@ -91,6 +91,17 @@ The plain option must precede all other options or it won't work. I'll try and f
 
 I'd love to implement some kind of searching functionality, but I'll have to look into that.
 
+### Installing
+
+Simply copy the script in your $PATH and make it executable, something like this should work:
+
+```
+mv notes.sh ~/bin/
+chmod 755 ~/bin/notes.sh
+```
+
+Adapt to your needs as you see fit.
+
 ### Vision
 
 Ok, maybe vision is a bit of a stretch, but I've written this script to use it in my daily workflow with [rofi](https://github.com/davatorium/rofi) and [i3wm](https://github.com/i3/i3). I'll adapt the way it works to better suit this need of mine.
@@ -103,6 +114,7 @@ There are of course things I'd love to add, but my main goal is for it to work t
  * add a way to display a note without running vim
  * markdown?
  	- maybe implement an export feature that builds the html file from the note
+ * write a bash completion script to enable autocomplete in the shell
  * other ideas may come [...]
 
 ### Contributing
