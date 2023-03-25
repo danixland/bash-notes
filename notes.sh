@@ -294,7 +294,8 @@ while true; do
 			exit
 			;;
 		-- )
-			shift; break
+			helptext
+	        exit
 			;;
 		* )
 			break
