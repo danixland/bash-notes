@@ -1,5 +1,8 @@
 #! /bin/bash
 
+# bash-notes © 2023 by danix is licensed under CC BY-NC 4.0. 
+# To view a copy of this license, visit http://creativecommons.org/licenses/by-nc/4.0/
+
 # set -ex
 
 PID=$$
@@ -98,7 +101,7 @@ __NOWCONF__
     echo "				  (this option must precede all others)"
     echo "  -l | --list			: List existing notes"
     echo "  -a | --add [\"<title>\"]	: Add new note"
-    echo "  -m | --modify [<note>] 	: Modify note"
+    echo "  -e | --edit [<note>]	 	: Edit note"
     echo "  -d | --delete [<note> | all]	: Delete single note or all notes at once"
     echo "  -v | --version		: Print version"
     echo "  --userconf			: Export User config file"
@@ -272,7 +275,7 @@ fi
 
 # NOTE: This requires GNU getopt.  On Mac OS X and FreeBSD, you have to install this
 # separately; see below.
-GOPT=`getopt -o hvpla:m:d: --long help,version,list,plain,userconf,add:,modify:,delete:,editor:,storage: \
+GOPT=`getopt -o hvpla:e:d: --long help,version,list,plain,userconf,add:,edit:,delete:,editor:,storage: \
              -n 'bash-notes' -- "$@"`
 
 if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
@@ -305,7 +308,7 @@ while true; do
 			shift 2
 			addnote "$TITLE"
 	        ;;
-		-m | --modify )
+		-e | --edit )
 			NOTE="$2"
 			shift 2
 			editnote "$NOTE"
