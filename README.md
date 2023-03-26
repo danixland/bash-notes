@@ -135,6 +135,13 @@ There are of course things I'd love to add, but my main goal is for it to work t
 
 It'd mean so much to receive some feedback, patches if you feel like contributing, I'm not expecting much as this is a personal project, but feel free to interact as much as you want.
 
+### ChangeLog
+
+ * v0.2 - debugging implemented
+     - you can now generate a debug log in case something doesn't work
+ * v0.1 - first public upload
+     - all major functionalities are present and working
+
 ### Mantainer
 
  * [danix](https://danix.xyz) - it's just me, really...
