@@ -13,7 +13,7 @@ here's all the functions that are now available:
 -p | --plain			: Output is in plain text (without this option the output is colored)
 -l | --list			: List existing notes
 -a | --add "<title>"		: Add new note
--m | --modify <note> 		: Modify note
+-e | --edit <note> 		: Modify note
 -d | --delete [<note> | all]	: Delete note
 -v | --version			: Print version
 --userconf			: Export User config file
