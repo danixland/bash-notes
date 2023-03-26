@@ -44,6 +44,9 @@ TERMINAL=/usr/bin/alacritty
 # see example in the addnote function
 TERM_OPTS="--class notes --title notes -e "
 
+# set this to true to have output in plain text
+# or use the -p option on the command line before every other option
+PLAIN=false
 # base directory for program files
 BASEDIR=~/.local/share/bash-notes
 # notes database in json format
@@ -102,6 +105,16 @@ chmod 755 ~/bin/notes.sh
 ```
 
 Adapt to your needs as you see fit.
+
+### Debugging
+
+If the script doesn't work for you for some reasons, you can turn on debugging by running the script like this:
+
+```bash
+DEBUG=true notes.sh [options]
+```
+
+And then you'll be able to check all that happened in the log file at `/tmp/debug_bash-notes.log`
 
 ### Vision
 

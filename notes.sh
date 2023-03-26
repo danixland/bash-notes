@@ -3,21 +3,32 @@
 # bash-notes © 2023 by danix is licensed under CC BY-NC 4.0. 
 # To view a copy of this license, visit http://creativecommons.org/licenses/by-nc/4.0/
 
-# set -ex
+# to debug the script run it like:
+# DEBUG=true notes.sh ...
+# and check /tmp/debug_bash-notes.log
+if [[ $DEBUG == true ]]; then
+	exec 5> /tmp/debug_bash-notes.log
+	BASH_XTRACEFD="5"
+	PS4='$LINENO: '
+	set -x
+fi
 
 PID=$$
-VERSION="0.1"
+VERSION="0.2"
 
 set_defaults() {
 # Binaries to use
+JQ=${JQ:-/usr/bin/jq}
 EDITOR=${EDITOR:-/usr/bin/vim}
 TERMINAL=${TERMINAL:-/usr/bin/alacritty}
 # add options for your terminal. Remember to add the last option to execute
 # your editor program, otherwise the script will fail.
 # see example in the addnote function
 TERM_OPTS="--class notes --title notes -e "
-JQ=${JQ:-/usr/bin/jq}
 
+# set this to true to have output in plain text
+# or use the -p option on the command line before every other option
+PLAIN=false
 # base directory for program files
 BASEDIR=${BASEDIR:-~/.local/share/bash-notes}
 # notes database in json format
@@ -87,6 +98,7 @@ base directory:		${BASEDIR}/
 notes archive:		${NOTESDIR}/
 notes database:		${DB}
 rc file:		$RCFILE
+debug file:		/tmp/debug_bash-note.log
 
 text editor:		${EDITOR}
 terminal:		${TERMINAL}
@@ -278,12 +290,10 @@ fi
 GOPT=`getopt -o hvpla:e:d: --long help,version,list,plain,userconf,add:,edit:,delete:,editor:,storage: \
              -n 'bash-notes' -- "$@"`
 
-if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
+if [ $? != 0 ] ; then helptext >&2 ; exit 1 ; fi
 
 # Note the quotes around `$GOPT': they are essential!
 eval set -- "$GOPT"
-
-PLAIN=false
 
 while true; do
 	case "$1" in
