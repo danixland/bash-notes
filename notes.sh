@@ -43,10 +43,10 @@ set_defaults
 # Do not edit below this point
 RCFILE=${RCFILE:-~/.config/bash-notes.rc}
 TMPDB=/tmp/db.json
-BASENAME=$( basename $0 )
+BASENAME=$( basename "$0" )
 NOW=$(date +%s)
 
-if [ ! -x $JQ ]; then
+if [ ! -x "$JQ" ]; then
 	echo "jq not found in your PATH"
 	echo "install jq to continue"
 	exit 1
@@ -54,11 +54,12 @@ fi
 
 # IMPORT USER DEFINED OPTIONS IF ANY
 if [[ -f $RCFILE ]]; then
-	source $RCFILE
+	# shellcheck disable=SC1090
+	source "$RCFILE"
 fi
 
 # We prevent the program from running more than one instance:
-PIDFILE=/var/tmp/$(basename $0 .sh).pid
+PIDFILE=/var/tmp/$(basename "$0" .sh).pid
 
 # Make sure the PID file is removed when we kill the process
 trap 'rm -f $PIDFILE; exit 1' TERM INT
@@ -66,13 +67,14 @@ trap 'rm -f $PIDFILE; exit 1' TERM INT
 if [[ -r $PIDFILE ]]; then
 	# PIDFILE exists, so I guess there's already an instance running
 	# let's kill it and run again
+	# shellcheck disable=SC2046,SC2086
 	kill -s 15 $(cat $PIDFILE) > /dev/null 2>&1
 	# should already be deleted by trap, but just to be sure
-	rm $PIDFILE
+	rm "$PIDFILE"
 fi
 
 # create PIDFILE
-echo $PID > $PIDFILE
+echo $PID > "$PIDFILE"
 
 # check if input is a number, returns false or the number itself
 function check_noteID() {
@@ -82,7 +84,7 @@ function check_noteID() {
 			return 1
 			;;
 		*)
-			echo $IN
+			echo "$IN"
 			;;
 	esac
 }
@@ -128,29 +130,37 @@ function addnote() {
 
 	NOTETITLE="$1"
 	echo "adding new note - \"$NOTETITLE\""
+	# shellcheck disable=SC2086
 	LASTID=$($JQ '.notes[-1].id // 0 | tonumber' $DB)
 	# [ "" == $LASTID ] && LASTID=0
-	NOTEID=$(( $LASTID + 1 ))
+	NOTEID=$(( LASTID + 1 ))
+	# shellcheck disable=SC2086
 	touch ${NOTESDIR}/${NOW}
+	# shellcheck disable=SC2016
 	$JQ --arg i "$NOTEID" --arg t "$NOTETITLE" --arg f "$NOW" '.notes += [{"id": $i, "title": $t, "file": $f}]' "$DB" > $TMPDB
+	# shellcheck disable=SC2086
 	mv $TMPDB $DB
 	# example for alacritty:
 	# alacritty --class notes --title notes -e /usr/bin/vim ...
+	# shellcheck disable=SC2086,SC2091
 	$(${TERMINAL} ${TERM_OPTS} ${EDITOR} ${NOTESDIR}/${NOW})
 }
 
 function listnotes() {
 	# [ $PLAIN == true ] && echo "output is plain text" || echo "output is colored"
-	if [[ $(ls -A $NOTESDIR) ]]; then
+	if [[ $(ls -A "$NOTESDIR") ]]; then
 		if [ $PLAIN == false ]; then
 			echo "listing all notes"
 			echo ""
 		fi
 		[ $PLAIN == false ] && echo "[ID]	[TITLE]		[CREATED]"
-		for i in ${NOTESDIR}/*; do
+		for i in "${NOTESDIR}"/*; do
+			# shellcheck disable=SC2155
 			local fname=$(basename $i)
 			DATE=$(date -d @${fname} +"%d/%m/%Y %R %z%Z")
+			# shellcheck disable=SC2016,SC2086
 			TITLE=$($JQ -r --arg z $(basename $i) '.notes[] | select(.file == $z) | .title' $DB)
+			# shellcheck disable=SC2016,SC2086
 			ID=$($JQ -r --arg z $(basename $i) '.notes[] | select(.file == $z) | .id' $DB)
 			[ $PLAIN == false ] && echo "[${ID}]	${TITLE}	${DATE}" || echo "${ID} - ${TITLE} - ${DATE}"
 		done
@@ -161,16 +171,21 @@ function listnotes() {
 
 function editnote() {
 	NOTE=$1
-	local OK=$(check_noteID $NOTE)
-	if [ ! $OK ]; then
+	# shellcheck disable=SC2155
+	local OK=$(check_noteID "$NOTE")
+	if [ ! "$OK" ]; then
 		echo "invalid note \"$NOTE\""
+		echo "Use the note ID that you can fetch after listing your notes"
 		exit 1
 	fi
 
+	# shellcheck disable=SC2016,SC2086
 	TITLE=$($JQ --arg i $OK '.notes[] | select(.id == $i) | .title' $DB)
+	# shellcheck disable=SC2016,SC2086
 	FILE=$($JQ -r --arg i $OK '.notes[] | select(.id == $i) | .file' $DB)
 	if [ "$TITLE" ]; then
 		echo "editing note $TITLE"
+		# shellcheck disable=SC2086,SC2091
 		$(${TERMINAL} ${TERM_OPTS} ${EDITOR} ${NOTESDIR}/${FILE})
 	else
 		 echo "note not found"
@@ -185,13 +200,16 @@ function rmnote() {
 	fi
 
 	NOTE=$1
-	if [ "all" == $NOTE ]; then
+	if [ "all" == "$NOTE" ]; then
 		echo "You're going to delete all notes."
 		read -r -p "Do you wish to continue? (y/N) " ANSWER
 		case $ANSWER in
 			y|Y )
+				# shellcheck disable=SC2086
 				$JQ 'del(.notes[])' $DB > $TMPDB
+				# shellcheck disable=SC2086
 				mv $TMPDB $DB
+				# shellcheck disable=SC2086
 				rm $NOTESDIR/*
 				echo "Deleted all notes"
 				;;
@@ -201,16 +219,22 @@ function rmnote() {
 				;;
 		esac
 	else
-		local OK=$(check_noteID $NOTE)
-		if [ ! $OK ]; then
+		# shellcheck disable=SC2155
+		local OK=$(check_noteID "$NOTE")
+		if [ ! "$OK" ]; then
 			echo "invalid note \"$NOTE\""
+			echo "Use the note ID that you can fetch after listing your notes"
 			exit 1
 		fi
 
+		# shellcheck disable=SC2016,SC2086
 		TITLE=$($JQ --arg i $OK '.notes[] | select(.id == $i) | .title' $DB)
+		# shellcheck disable=SC2016,SC2086
 		FILE=$($JQ -r --arg i $OK '.notes[] | select(.id == $i) | .file' $DB)
 		if [ "$TITLE" ]; then
+		# shellcheck disable=SC2016,SC2086
 		$JQ -r --arg i $OK 'del(.notes[] | select(.id == $i))' $DB > $TMPDB
+		# shellcheck disable=SC2086
 		mv $TMPDB $DB
 		rm $NOTESDIR/$FILE
 		echo "Deleted note $TITLE"
@@ -287,9 +311,11 @@ fi
 
 # NOTE: This requires GNU getopt.  On Mac OS X and FreeBSD, you have to install this
 # separately; see below.
+# shellcheck disable=SC2006
 GOPT=`getopt -o hvpla:e:d: --long help,version,list,plain,userconf,add:,edit:,delete:,editor:,storage: \
              -n 'bash-notes' -- "$@"`
 
+# shellcheck disable=SC2181
 if [ $? != 0 ] ; then helptext >&2 ; exit 1 ; fi
 
 # Note the quotes around `$GOPT': they are essential!
@@ -330,7 +356,9 @@ while true; do
 			;;
 		--userconf )
 			export_config
+			# shellcheck disable=SC2317
 			echo "config exported to \"$RCFILE\""
+			# shellcheck disable=SC2317
 			exit
 			;;
 		-- )
