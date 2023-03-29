@@ -81,194 +81,7 @@ fi
 # create PIDFILE
 echo $PID > "$PIDFILE"
 
-# check if input is a number, returns false or the number itself
-function check_noteID() {
-	IN=$1
-	case $IN in
-		''|*[!0-9]*)
-			return 1
-			;;
-		*)
-			echo "$IN"
-			;;
-	esac
-}
-
-function helptext() {
-    echo "Usage:"
-    echo "  $0 [PARAMS] ..."
-    echo ""
-	cat << __NOWCONF__ 
-${BASENAME} configuration is:
-
-base directory:		${BASEDIR}/
-notes archive:		${NOTESDIR}/
-notes database:		${DB}
-rc file:		$RCFILE
-debug file:		/tmp/debug_bash-note.log
-
-text editor:		${EDITOR}
-terminal:		${TERMINAL}
-jq executable:		${JQ}
-__NOWCONF__
-
-	echo ""
-    echo "${BASENAME} parameters are:"
-    echo "  -h | --help			: This help text"
-    echo "  -p | --plain			: Output is in plain text"
-    echo "				  (without this option the output is formatted)"
-    echo "				  (this option must precede all others)"
-    echo "  -l | --list			: List existing notes"
-    echo "  -a | --add [\"<title>\"]	: Add new note"
-    echo "  -e | --edit [<note>]	 	: Edit note"
-    echo "  -d | --delete [<note> | all]	: Delete single note or all notes at once"
-    echo "	-s | --show [<note>]		: Display note using your favourite PAGER"
-    echo "  -v | --version		: Print version"
-    echo "  --userconf			: Export User config file"
-    echo ""
-}
-
-function addnote() {
-	# remove eventually existing temp DB file
-	if [[ -f $TMPDB ]]; then
-		rm $TMPDB
-	fi
-
-	NOTETITLE="$1"
-	echo "adding new note - \"$NOTETITLE\""
-	# shellcheck disable=SC2086
-	LASTID=$($JQ '.notes[-1].id // 0 | tonumber' $DB)
-	# [ "" == $LASTID ] && LASTID=0
-	NOTEID=$(( LASTID + 1 ))
-	# shellcheck disable=SC2086
-	touch ${NOTESDIR}/${NOW}
-	# shellcheck disable=SC2016
-	$JQ --arg i "$NOTEID" --arg t "$NOTETITLE" --arg f "$NOW" '.notes += [{"id": $i, "title": $t, "file": $f}]' "$DB" > $TMPDB
-	# shellcheck disable=SC2086
-	mv $TMPDB $DB
-	# example for alacritty:
-	# alacritty --class notes --title notes -e /usr/bin/vim ...
-	# shellcheck disable=SC2086,SC2091
-	$(${TERMINAL} ${TERM_OPTS} ${EDITOR} ${NOTESDIR}/${NOW})
-}
-
-function listnotes() {
-	# [ $PLAIN == true ] && echo "output is plain text" || echo "output is colored"
-	if [[ $(ls -A "$NOTESDIR") ]]; then
-		if [ $PLAIN == false ]; then
-			echo "listing all notes"
-			echo ""
-		fi
-		[ $PLAIN == false ] && echo "[ID]	[TITLE]		[CREATED]"
-		for i in "${NOTESDIR}"/*; do
-			# shellcheck disable=SC2155
-			local fname=$(basename $i)
-			DATE=$(date -d @${fname} +"%d/%m/%Y %R %z%Z")
-			# shellcheck disable=SC2016,SC2086
-			TITLE=$($JQ -r --arg z $(basename $i) '.notes[] | select(.file == $z) | .title' $DB)
-			# shellcheck disable=SC2016,SC2086
-			ID=$($JQ -r --arg z $(basename $i) '.notes[] | select(.file == $z) | .id' $DB)
-			[ $PLAIN == false ] && echo "[${ID}]	${TITLE}	${DATE}" || echo "${ID} - ${TITLE} - ${DATE}"
-		done
-	else
-		echo "no notes yet. You can add your first one with: ${BASENAME} -a \"your note title\""
-	fi
-}
-
-function editnote() {
-	NOTE=$1
-	# shellcheck disable=SC2155
-	local OK=$(check_noteID "$NOTE")
-	if [ ! "$OK" ]; then
-		echo "invalid note \"$NOTE\""
-		echo "Use the note ID that you can fetch after listing your notes"
-		exit 1
-	fi
-
-	# shellcheck disable=SC2016,SC2086
-	TITLE=$($JQ --arg i $OK '.notes[] | select(.id == $i) | .title' $DB)
-	# shellcheck disable=SC2016,SC2086
-	FILE=$($JQ -r --arg i $OK '.notes[] | select(.id == $i) | .file' $DB)
-	if [ "$TITLE" ]; then
-		echo "editing note $TITLE"
-		# shellcheck disable=SC2086,SC2091
-		$(${TERMINAL} ${TERM_OPTS} ${EDITOR} ${NOTESDIR}/${FILE})
-	else
-		 echo "note not found"
-		 exit 1
-	fi
-}
-
-function rmnote() {
-	# remove eventually existing temp DB file
-	if [[ -f $TMPDB ]]; then
-		rm $TMPDB
-	fi
-
-	NOTE=$1
-	if [ "all" == "$NOTE" ]; then
-		echo "You're going to delete all notes."
-		read -r -p "Do you wish to continue? (y/N) " ANSWER
-		case $ANSWER in
-			y|Y )
-				# shellcheck disable=SC2086
-				$JQ 'del(.notes[])' $DB > $TMPDB
-				# shellcheck disable=SC2086
-				mv $TMPDB $DB
-				# shellcheck disable=SC2086
-				rm $NOTESDIR/*
-				echo "Deleted all notes"
-				;;
-			* )
-				echo "Aborting, no notes were deleted."
-				exit 1
-				;;
-		esac
-	else
-		# shellcheck disable=SC2155
-		local OK=$(check_noteID "$NOTE")
-		if [ ! "$OK" ]; then
-			echo "invalid note \"$NOTE\""
-			echo "Use the note ID that you can fetch after listing your notes"
-			exit 1
-		fi
-
-		# shellcheck disable=SC2016,SC2086
-		TITLE=$($JQ --arg i $OK '.notes[] | select(.id == $i) | .title' $DB)
-		# shellcheck disable=SC2016,SC2086
-		FILE=$($JQ -r --arg i $OK '.notes[] | select(.id == $i) | .file' $DB)
-		if [ "$TITLE" ]; then
-			# shellcheck disable=SC2016,SC2086
-			$JQ -r --arg i $OK 'del(.notes[] | select(.id == $i))' $DB > $TMPDB
-			# shellcheck disable=SC2086
-			mv $TMPDB $DB
-			rm $NOTESDIR/$FILE
-			echo "Deleted note $TITLE"
-		else
-			 echo "note not found"
-			 exit 1
-		fi
-	fi
-}
-
-function shownote() {
-	NOTE=$1
-
-	# shellcheck disable=SC2155
-	local OK=$(check_noteID "$NOTE")
-	if [ ! "$OK" ]; then
-		echo "invalid note \"$NOTE\""
-		echo "Use the note ID that you can fetch after listing your notes"
-		exit 1
-	fi
-
-	FILE=$($JQ -r --arg i $OK '.notes[] | select(.id == $i) | .file' $DB)
-
-	if [ "$FILE" ]; then
-		$PAGER ${NOTESDIR}/${FILE}
-	fi
-}
-
+# Export config to file
 function export_config() {
 	if [ -r ${RCFILE} ]; then
 		echo "Backing up current '${RCFILE}'...."
@@ -332,7 +145,188 @@ if [[ ! -d $NOTESDIR ]]; then
 	# we don't have a directory. FIRST RUN?
 	firstrun
 fi
+# check if input is a number, returns false or the number itself
+function check_noteID() {
+	IN=$1
+	case $IN in
+		''|*[!0-9]*)
+			return 1
+			;;
+		*)
+			echo "$IN"
+			;;
+	esac
+}
 
+function helptext() {
+    echo "Usage:"
+    echo "  $0 [PARAMS] ..."
+    echo ""
+	cat << __NOWCONF__ 
+${BASENAME} configuration is:
+
+base directory:		${BASEDIR}/
+notes archive:		${NOTESDIR}/
+notes database:		${DB}
+rc file:		$RCFILE
+debug file:		/tmp/debug_bash-note.log
+
+text editor:		${EDITOR}
+terminal:		${TERMINAL}
+jq executable:		${JQ}
+__NOWCONF__
+
+	echo ""
+    echo "${BASENAME} parameters are:"
+    echo "  -h | --help			: This help text"
+    echo "  -p | --plain			: Output is in plain text"
+    echo "				  (without this option the output is formatted)"
+    echo "				  (this option must precede all others)"
+    echo "  -l | --list			: List existing notes"
+    echo "  -a | --add [\"<title>\"]	: Add new note"
+    echo "  -e | --edit [<note>]	 	: Edit note"
+    echo "  -d | --delete [<note> | all]	: Delete single note or all notes at once"
+    echo "	-s | --show [<note>]		: Display note using your favourite PAGER"
+    echo "  -v | --version		: Print version"
+    echo "  --userconf			: Export User config file"
+    echo ""
+}
+function addnote() {
+	# remove eventually existing temp DB file
+	if [[ -f $TMPDB ]]; then
+		rm $TMPDB
+	fi
+
+	NOTETITLE="$1"
+	echo "adding new note - \"$NOTETITLE\""
+	# shellcheck disable=SC2086
+	LASTID=$($JQ '.notes[-1].id // 0 | tonumber' $DB)
+	# [ "" == $LASTID ] && LASTID=0
+	NOTEID=$(( LASTID + 1 ))
+	# shellcheck disable=SC2086
+	touch ${NOTESDIR}/${NOW}
+	# shellcheck disable=SC2016
+	$JQ --arg i "$NOTEID" --arg t "$NOTETITLE" --arg f "$NOW" '.notes += [{"id": $i, "title": $t, "file": $f}]' "$DB" > $TMPDB
+	# shellcheck disable=SC2086
+	mv $TMPDB $DB
+	# example for alacritty:
+	# alacritty --class notes --title notes -e /usr/bin/vim ...
+	# shellcheck disable=SC2086,SC2091
+	$(${TERMINAL} ${TERM_OPTS} ${EDITOR} ${NOTESDIR}/${NOW})
+}
+function editnote() {
+	NOTE=$1
+	# shellcheck disable=SC2155
+	local OK=$(check_noteID "$NOTE")
+	if [ ! "$OK" ]; then
+		echo "invalid note \"$NOTE\""
+		echo "Use the note ID that you can fetch after listing your notes"
+		exit 1
+	fi
+
+	# shellcheck disable=SC2016,SC2086
+	TITLE=$($JQ --arg i $OK '.notes[] | select(.id == $i) | .title' $DB)
+	# shellcheck disable=SC2016,SC2086
+	FILE=$($JQ -r --arg i $OK '.notes[] | select(.id == $i) | .file' $DB)
+	if [ "$TITLE" ]; then
+		echo "editing note $TITLE"
+		# shellcheck disable=SC2086,SC2091
+		$(${TERMINAL} ${TERM_OPTS} ${EDITOR} ${NOTESDIR}/${FILE})
+	else
+		 echo "note not found"
+		 exit 1
+	fi
+}
+function listnotes() {
+	# [ $PLAIN == true ] && echo "output is plain text" || echo "output is colored"
+	if [[ $(ls -A "$NOTESDIR") ]]; then
+		if [ $PLAIN == false ]; then
+			echo "listing all notes"
+			echo ""
+		fi
+		[ $PLAIN == false ] && echo "[ID]	[TITLE]		[CREATED]"
+		for i in "${NOTESDIR}"/*; do
+			# shellcheck disable=SC2155
+			local fname=$(basename $i)
+			DATE=$(date -d @${fname} +"%d/%m/%Y %R %z%Z")
+			# shellcheck disable=SC2016,SC2086
+			TITLE=$($JQ -r --arg z $(basename $i) '.notes[] | select(.file == $z) | .title' $DB)
+			# shellcheck disable=SC2016,SC2086
+			ID=$($JQ -r --arg z $(basename $i) '.notes[] | select(.file == $z) | .id' $DB)
+			[ $PLAIN == false ] && echo "[${ID}]	${TITLE}	${DATE}" || echo "${ID} - ${TITLE} - ${DATE}"
+		done
+	else
+		echo "no notes yet. You can add your first one with: ${BASENAME} -a \"your note title\""
+	fi
+}
+function rmnote() {
+	# remove eventually existing temp DB file
+	if [[ -f $TMPDB ]]; then
+		rm $TMPDB
+	fi
+
+	NOTE=$1
+	if [ "all" == "$NOTE" ]; then
+		echo "You're going to delete all notes."
+		read -r -p "Do you wish to continue? (y/N) " ANSWER
+		case $ANSWER in
+			y|Y )
+				# shellcheck disable=SC2086
+				$JQ 'del(.notes[])' $DB > $TMPDB
+				# shellcheck disable=SC2086
+				mv $TMPDB $DB
+				# shellcheck disable=SC2086
+				rm $NOTESDIR/*
+				echo "Deleted all notes"
+				;;
+			* )
+				echo "Aborting, no notes were deleted."
+				exit 1
+				;;
+		esac
+	else
+		# shellcheck disable=SC2155
+		local OK=$(check_noteID "$NOTE")
+		if [ ! "$OK" ]; then
+			echo "invalid note \"$NOTE\""
+			echo "Use the note ID that you can fetch after listing your notes"
+			exit 1
+		fi
+
+		# shellcheck disable=SC2016,SC2086
+		TITLE=$($JQ --arg i $OK '.notes[] | select(.id == $i) | .title' $DB)
+		# shellcheck disable=SC2016,SC2086
+		FILE=$($JQ -r --arg i $OK '.notes[] | select(.id == $i) | .file' $DB)
+		if [ "$TITLE" ]; then
+			# shellcheck disable=SC2016,SC2086
+			$JQ -r --arg i $OK 'del(.notes[] | select(.id == $i))' $DB > $TMPDB
+			# shellcheck disable=SC2086
+			mv $TMPDB $DB
+			rm $NOTESDIR/$FILE
+			echo "Deleted note $TITLE"
+		else
+			 echo "note not found"
+			 exit 1
+		fi
+	fi
+}
+function shownote() {
+	NOTE=$1
+
+	# shellcheck disable=SC2155
+	local OK=$(check_noteID "$NOTE")
+	if [ ! "$OK" ]; then
+		echo "invalid note \"$NOTE\""
+		echo "Use the note ID that you can fetch after listing your notes"
+		exit 1
+	fi
+
+	FILE=$($JQ -r --arg i $OK '.notes[] | select(.id == $i) | .file' $DB)
+
+	if [ "$FILE" ]; then
+		$PAGER ${NOTESDIR}/${FILE}
+	fi
+}
 # shellcheck disable=SC2006
 GOPT=$(getopt -o hvpla::e::d::s:: --long help,version,list,plain,userconf,backup::,add::,edit::,delete::,show:: -n 'bash-notes' -- "$@")
 
