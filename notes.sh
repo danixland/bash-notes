@@ -14,7 +14,11 @@ if [[ $DEBUG == true ]]; then
 fi
 
 PID=$$
-VERSION="0.2"
+BASENAME=$( basename "$0" )
+NOW=$(date +%s)
+
+VERSION="0.3"
+DBVERSION=${VERSION}_${NOW}
 
 set_defaults() {
 # Binaries to use
@@ -25,6 +29,9 @@ TERMINAL=${TERMINAL:-/usr/bin/alacritty}
 # your editor program, otherwise the script will fail.
 # see example in the addnote function
 TERM_OPTS="--class notes --title notes -e "
+# Setting PAGER here overrides whatever is set in your default shell
+# comment this option to use your default pager if set in your shell.
+PAGER=${PAGER:-/usr/bin/more}
 
 # set this to true to have output in plain text
 # or use the -p option on the command line before every other option
@@ -43,8 +50,6 @@ set_defaults
 # Do not edit below this point
 RCFILE=${RCFILE:-~/.config/bash-notes.rc}
 TMPDB=/tmp/db.json
-BASENAME=$( basename "$0" )
-NOW=$(date +%s)
 
 if [ ! -x "$JQ" ]; then
 	echo "jq not found in your PATH"
@@ -117,6 +122,7 @@ __NOWCONF__
     echo "  -a | --add [\"<title>\"]	: Add new note"
     echo "  -e | --edit [<note>]	 	: Edit note"
     echo "  -d | --delete [<note> | all]	: Delete single note or all notes at once"
+    echo "	-s | --show [<note>]		: Display note using your favourite PAGER"
     echo "  -v | --version		: Print version"
     echo "  --userconf			: Export User config file"
     echo ""
@@ -232,16 +238,34 @@ function rmnote() {
 		# shellcheck disable=SC2016,SC2086
 		FILE=$($JQ -r --arg i $OK '.notes[] | select(.id == $i) | .file' $DB)
 		if [ "$TITLE" ]; then
-		# shellcheck disable=SC2016,SC2086
-		$JQ -r --arg i $OK 'del(.notes[] | select(.id == $i))' $DB > $TMPDB
-		# shellcheck disable=SC2086
-		mv $TMPDB $DB
-		rm $NOTESDIR/$FILE
-		echo "Deleted note $TITLE"
+			# shellcheck disable=SC2016,SC2086
+			$JQ -r --arg i $OK 'del(.notes[] | select(.id == $i))' $DB > $TMPDB
+			# shellcheck disable=SC2086
+			mv $TMPDB $DB
+			rm $NOTESDIR/$FILE
+			echo "Deleted note $TITLE"
 		else
 			 echo "note not found"
 			 exit 1
 		fi
+	fi
+}
+
+function shownote() {
+	NOTE=$1
+
+	# shellcheck disable=SC2155
+	local OK=$(check_noteID "$NOTE")
+	if [ ! "$OK" ]; then
+		echo "invalid note \"$NOTE\""
+		echo "Use the note ID that you can fetch after listing your notes"
+		exit 1
+	fi
+
+	FILE=$($JQ -r --arg i $OK '.notes[] | select(.id == $i) | .file' $DB)
+
+	if [ "$FILE" ]; then
+		$PAGER ${NOTESDIR}/${FILE}
 	fi
 }
 
@@ -289,7 +313,7 @@ jq executable:		${JQ}
 {
 	"params": {
 		"version": "${VERSION}",
-		"dbversion": "${NOW}"
+		"dbversion": "${DBVERSION}"
 	},
 	"notes": []
 }
@@ -309,17 +333,15 @@ if [[ ! -d $NOTESDIR ]]; then
 	firstrun
 fi
 
-# NOTE: This requires GNU getopt.  On Mac OS X and FreeBSD, you have to install this
-# separately; see below.
 # shellcheck disable=SC2006
-GOPT=`getopt -o hvpla:e:d: --long help,version,list,plain,userconf,add:,edit:,delete:,editor:,storage: \
-             -n 'bash-notes' -- "$@"`
+GOPT=$(getopt -o hvpla::e::d::s:: --long help,version,list,plain,userconf,backup::,add::,edit::,delete::,show:: -n 'bash-notes' -- "$@")
 
 # shellcheck disable=SC2181
 if [ $? != 0 ] ; then helptext >&2 ; exit 1 ; fi
 
 # Note the quotes around `$GOPT': they are essential!
 eval set -- "$GOPT"
+unset GOPT
 
 while true; do
 	case "$1" in
@@ -340,19 +362,52 @@ while true; do
 			exit
 	        ;;
 	    -a | --add )
-			TITLE="$2"
+			case "$2" in
+				'' )
+					read -r -p "Title: " TITLE
+					;;
+				* )
+					TITLE=$2
+					;;
+			esac
 			shift 2
 			addnote "$TITLE"
 	        ;;
 		-e | --edit )
-			NOTE="$2"
+			case "$2" in
+				'' )
+					read -r -p "Note ID: " NOTE
+					;;
+				* )
+					NOTE=$2
+					;;
+			esac
 			shift 2
 			editnote "$NOTE"
 			;;
 		-d | --delete )
-			NOTE="$2"
+			case "$2" in
+				'' )
+					read -r -p "Note ID: " NOTE
+					;;
+				* )
+					NOTE=$2
+					;;
+			esac
 			shift 2
 			rmnote "$NOTE"
+			;;
+		-s | --show )
+			case "$2" in
+				'' )
+					read -r -p "Note ID: " NOTE
+					;;
+				* )
+					NOTE=$2
+					;;
+			esac
+			shift 2
+			shownote "$NOTE"
 			;;
 		--userconf )
 			export_config
@@ -371,3 +426,6 @@ while true; do
 	esac
 done
 
+if [ -z $1 ]; then
+	helptext
+fi
