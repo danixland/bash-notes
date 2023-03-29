@@ -37,6 +37,7 @@ while true; do
 			esac
 			shift 2
 			addnote "$TITLE"
+			exit
 	        ;;
 		-e | --edit )
 			case "$2" in
@@ -49,6 +50,7 @@ while true; do
 			esac
 			shift 2
 			editnote "$NOTE"
+			exit
 			;;
 		-d | --delete )
 			case "$2" in
@@ -61,6 +63,7 @@ while true; do
 			esac
 			shift 2
 			rmnote "$NOTE"
+			exit
 			;;
 		-s | --show )
 			case "$2" in
@@ -73,6 +76,7 @@ while true; do
 			esac
 			shift 2
 			shownote "$NOTE"
+			exit
 			;;
 		--userconf )
 			export_config
@@ -90,7 +94,3 @@ while true; do
 			;;
 	esac
 done
-
-if [ -z $1 ]; then
-	helptext
-fi
