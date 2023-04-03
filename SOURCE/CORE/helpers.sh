@@ -27,20 +27,23 @@ debug file:		/tmp/debug_bash-note.log
 text editor:		${EDITOR}
 terminal:		${TERMINAL}
 jq executable:		${JQ}
+PAGER:                  ${PAGER}
 __NOWCONF__
 
 	echo ""
     echo "${BASENAME} parameters are:"
-    echo "  -h | --help			: This help text"
-    echo "  -p | --plain			: Output is in plain text"
-    echo "				  (without this option the output is formatted)"
-    echo "				  (this option must precede all others)"
-    echo "  -l | --list			: List existing notes"
-    echo "  -a | --add [\"<title>\"]	: Add new note"
-    echo "  -e | --edit [<note>]	 	: Edit note"
-    echo "  -d | --delete [<note> | all]	: Delete single note or all notes at once"
-    echo "	-s | --show [<note>]		: Display note using your favourite PAGER"
-    echo "  -v | --version		: Print version"
-    echo "  --userconf			: Export User config file"
+    echo -e "  -h | --help\t\t\t: This help text"
+    echo -e "  -p | --plain\t\t\t: Output is in plain text"
+    echo -e "\t\t\t\t  (without this option the output is formatted)"
+    echo -e "\t\t\t\t  (this option must precede all others)"
+    echo -e "  -l | --list\t\t\t: List existing notes"
+    echo -e "  -a | --add [\"<title>\"]\t: Add new note"
+    echo -e "  -e | --edit [<note>]\t\t: Edit note"
+    echo -e "  -d | --delete [<note> | all]	: Delete single note or all notes at once"
+    echo -e "  -s | --show [<note>]\t\t: Display note using your favourite PAGER"
+    echo -e "  -v | --version\t\t: Print version"
+    echo -e "  --userconf\t\t\t: Export User config file"
+    echo -e "  --backup [<dest>]\t\t: Backup your data in your destination folder"
     echo ""
 }
+

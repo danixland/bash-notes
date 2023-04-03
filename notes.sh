@@ -118,6 +118,7 @@ terminal:		${TERMINAL}
 jq executable:		${JQ}
 "
 
+	echo "Now I'll create the needed files and directories."
 	read -r -p "Do you wish to continue? (y/N) " ANSWER
 	case $ANSWER in
 		y|Y )
@@ -174,23 +175,26 @@ debug file:		/tmp/debug_bash-note.log
 text editor:		${EDITOR}
 terminal:		${TERMINAL}
 jq executable:		${JQ}
+PAGER:                  ${PAGER}
 __NOWCONF__
 
 	echo ""
     echo "${BASENAME} parameters are:"
-    echo "  -h | --help			: This help text"
-    echo "  -p | --plain			: Output is in plain text"
-    echo "				  (without this option the output is formatted)"
-    echo "				  (this option must precede all others)"
-    echo "  -l | --list			: List existing notes"
-    echo "  -a | --add [\"<title>\"]	: Add new note"
-    echo "  -e | --edit [<note>]	 	: Edit note"
-    echo "  -d | --delete [<note> | all]	: Delete single note or all notes at once"
-    echo "	-s | --show [<note>]		: Display note using your favourite PAGER"
-    echo "  -v | --version		: Print version"
-    echo "  --userconf			: Export User config file"
+    echo -e "  -h | --help\t\t\t: This help text"
+    echo -e "  -p | --plain\t\t\t: Output is in plain text"
+    echo -e "\t\t\t\t  (without this option the output is formatted)"
+    echo -e "\t\t\t\t  (this option must precede all others)"
+    echo -e "  -l | --list\t\t\t: List existing notes"
+    echo -e "  -a | --add [\"<title>\"]\t: Add new note"
+    echo -e "  -e | --edit [<note>]\t\t: Edit note"
+    echo -e "  -d | --delete [<note> | all]	: Delete single note or all notes at once"
+    echo -e "  -s | --show [<note>]\t\t: Display note using your favourite PAGER"
+    echo -e "  -v | --version\t\t: Print version"
+    echo -e "  --userconf\t\t\t: Export User config file"
+    echo -e "  --backup [<dest>]\t\t: Backup your data in your destination folder"
     echo ""
 }
+
 function addnote() {
 	# remove eventually existing temp DB file
 	if [[ -f $TMPDB ]]; then
@@ -214,6 +218,46 @@ function addnote() {
 	# shellcheck disable=SC2086,SC2091
 	$(${TERMINAL} ${TERM_OPTS} ${EDITOR} ${NOTESDIR}/${NOW})
 }
+function backup_data() {
+	BACKUPDIR="$1"
+    echo "backing up data in $BACKUPDIR"
+
+
+    if [ -d $BACKUPDIR ]; then
+    	if [ $(/bin/ls -A $BACKUPDIR) ]; then
+	    	echo "$BACKUPDIR is not empty. Cannot continue"
+	    	exit
+	    else
+	    	echo "$BACKUPDIR is ok. Continuing!"
+	    fi
+	else
+		# BACKUPDIR doesn't exists
+		echo "$BACKUPDIR doesn't exists"
+		read -r -p "Do you want me to create it for you? (y/N) " ANSWER
+		case $ANSWER in
+			y|Y )
+				mkdir -p $BACKUPDIR
+				;;
+			* )
+				echo "No changes made. Exiting"
+				exit
+				;;
+		esac
+    fi
+    # ok, we have a backup directory
+    if [ -r $RCFILE ]; then
+    	BCKUP_COMM=$(rsync -avz --progress ${RCFILE} ${BASEDIR}/* ${BACKUPDIR})
+    else
+    	BCKUP_COMM=$(rsync -avz --progress ${BASEDIR}/* ${BACKUPDIR})
+    fi
+    # run the command
+    if [ "$BCKUP_COMM" ]; then	
+	    echo -e "BASE directory:\t\t$BASEDIR"
+	    echo -e "BACKUP directory:\t$BACKUPDIR"
+	    echo; echo "BACKUP COMPLETED"
+	fi
+}
+
 function editnote() {
 	NOTE=$1
 	# shellcheck disable=SC2155
@@ -236,7 +280,6 @@ function editnote() {
 		 echo "note not found"
 		 exit 1
 	fi
-	exit
 }
 function listnotes() {
 	# [ $PLAIN == true ] && echo "output is plain text" || echo "output is colored"
@@ -413,6 +456,19 @@ while true; do
 			# shellcheck disable=SC2317
 			echo "config exported to \"$RCFILE\""
 			# shellcheck disable=SC2317
+			exit
+			;;
+		--backup )
+			case "$2" in
+				'' )
+					read -r -p "Backup Dir: " BDIR
+					;;
+				* )
+					BDIR=$2
+					;;
+			esac
+			shift 2
+			backup_data $BDIR
 			exit
 			;;
 		-- )

@@ -118,6 +118,7 @@ terminal:		${TERMINAL}
 jq executable:		${JQ}
 "
 
+	echo "Now I'll create the needed files and directories."
 	read -r -p "Do you wish to continue? (y/N) " ANSWER
 	case $ANSWER in
 		y|Y )

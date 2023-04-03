@@ -85,6 +85,19 @@ while true; do
 			# shellcheck disable=SC2317
 			exit
 			;;
+		--backup )
+			case "$2" in
+				'' )
+					read -r -p "Backup Dir: " BDIR
+					;;
+				* )
+					BDIR=$2
+					;;
+			esac
+			shift 2
+			backup_data $BDIR
+			exit
+			;;
 		-- )
 			shift
 			break
