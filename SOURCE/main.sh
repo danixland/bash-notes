@@ -120,3 +120,12 @@ while true; do
 			;;
 	esac
 done
+
+for arg; do
+	if [ $(check_noteID $arg) ]; then
+		shownote $arg
+	else
+		helptext
+		exit
+	fi
+done

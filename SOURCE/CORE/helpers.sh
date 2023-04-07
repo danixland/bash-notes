@@ -13,7 +13,7 @@ function check_noteID() {
 
 function helptext() {
     echo "Usage:"
-    echo "  $0 [PARAMS] ..."
+    echo "  $0 [PARAMS] [note ID]..."
 	echo ""
     echo "${BASENAME} parameters are:"
     echo -e "  -h | --help\t\t\t: This help text"
@@ -30,6 +30,7 @@ function helptext() {
     echo -e "  --userconf\t\t\t: Export User config file"
     echo -e "  --backup [<dest>]\t\t: Backup your data in your destination folder"
     echo ""
+    echo -e "if a non option is passed and is a valid note ID, the note will be displayed."
 }
 
 function configtext() {
