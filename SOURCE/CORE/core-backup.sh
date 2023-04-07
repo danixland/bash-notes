@@ -26,19 +26,56 @@ function backup_data() {
     fi
     # ok, we have a backup directory
     if [ -r $RCFILE ]; then
-    	BCKUP_COMM=$(rsync -avz --progress ${RCFILE} ${BASEDIR}/* ${BACKUPDIR})
+    	BCKUP_COMM=$(rsync -avz --progress ${RCFILE}* ${BASEDIR}/* ${BACKUPDIR})
     else
     	BCKUP_COMM=$(rsync -avz --progress ${BASEDIR}/* ${BACKUPDIR})
     fi
     # run the command
     if [ "$BCKUP_COMM" ]; then	
-	    echo -e "BASE directory:\t\t$BASEDIR"
+	    echo -e "All files backed up."
 	    echo -e "BACKUP directory:\t$BACKUPDIR"
+	    tree $BACKUPDIR | $PAGER
 	    echo; echo "BACKUP COMPLETED"
 	fi
 }
 
 function backup_restore() {
-	echo "restoring backup"
+	BACKUPDIR="$1"
+	echo "restoring backup from $BACKUPDIR"
+	echo "This will overwrite all your notes and configurations with the backup."
+	read -r -p "Do you want to continue? (y/N) " ANSWER
+	case $ANSWER in
+		y|Y )
+			# restoring rc file
+			BACKUPRC=$(basename $RCFILE)
+			if [ -r ${BACKUPDIR}/${BACKUPRC} ]; then
+				if [ -r ${RCFILE} ]; then
+					echo "Backing up current '${RCFILE}'...."
+					mv -f ${RCFILE} ${RCFILE}.$(date +%Y%m%d_%H%M)
+				fi
+				cp --verbose ${BACKUPDIR}/${BACKUPRC} $RCFILE
+			fi
+			# restoring notes directory
+			if [ -d $BACKUPDIR/notes ]; then
+				if [ $(/bin/ls -A $NOTESDIR) ]; then
+					rm --verbose $NOTESDIR/*
+				fi
+				cp -r --verbose $BACKUPDIR/notes $BASEDIR
+			fi
+			# restoring database
+			BACKUPDB=$(basename $DB)
+			if [ -f ${BACKUPDIR}/${BACKUPDB} ]; then
+				if [ -r ${DB} ]; then
+					echo "Backing up current '${DB}'...."
+					mv -f ${DB} ${DB}.$(date +%Y%m%d_%H%M)
+				fi
+				cp --verbose ${BACKUPDIR}/${BACKUPDB} $DB
+			fi
+			;;
+		* )
+			echo "No changes made. Exiting"
+			exit
+			;;
+	esac
 }
 

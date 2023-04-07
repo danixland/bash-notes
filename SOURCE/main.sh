@@ -1,5 +1,5 @@
 # shellcheck disable=SC2006
-GOPT=$(getopt -o hvpla::e::d::s:: --long help,version,list,plain,userconf,backup::,add::,edit::,delete::,show:: -n 'bash-notes' -- "$@")
+GOPT=$(getopt -o hvplr::a::e::d::s:: --long help,version,list,plain,userconf,restore::,backup::,add::,edit::,delete::,show:: -n 'bash-notes' -- "$@")
 
 # shellcheck disable=SC2181
 if [ $? != 0 ] ; then helptext >&2 ; exit 1 ; fi
@@ -76,6 +76,19 @@ while true; do
 			esac
 			shift 2
 			shownote "$NOTE"
+			exit
+			;;
+		-r | --restore )
+			case "$2" in
+				'' )
+					read -r -p "Backup Dir: " RDIR
+					;;
+				* )
+					RDIR=$2
+					;;
+			esac
+			shift 2
+			backup_restore $RDIR
 			exit
 			;;
 		--userconf )

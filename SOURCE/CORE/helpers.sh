@@ -14,22 +14,6 @@ function check_noteID() {
 function helptext() {
     echo "Usage:"
     echo "  $0 [PARAMS] ..."
-    echo ""
-	cat << __NOWCONF__ 
-${BASENAME} configuration is:
-
-base directory:		${BASEDIR}/
-notes archive:		${NOTESDIR}/
-notes database:		${DB}
-rc file:		$RCFILE
-debug file:		/tmp/debug_bash-note.log
-
-text editor:		${EDITOR}
-terminal:		${TERMINAL}
-jq executable:		${JQ}
-PAGER:                  ${PAGER}
-__NOWCONF__
-
 	echo ""
     echo "${BASENAME} parameters are:"
     echo -e "  -h | --help\t\t\t: This help text"
@@ -37,13 +21,32 @@ __NOWCONF__
     echo -e "\t\t\t\t  (without this option the output is formatted)"
     echo -e "\t\t\t\t  (this option must precede all others)"
     echo -e "  -l | --list\t\t\t: List existing notes"
-    echo -e "  -a | --add [\"<title>\"]\t: Add new note"
-    echo -e "  -e | --edit [<note>]\t\t: Edit note"
-    echo -e "  -d | --delete [<note> | all]	: Delete single note or all notes at once"
-    echo -e "  -s | --show [<note>]\t\t: Display note using your favourite PAGER"
+    echo -e "  -a | --add=[\"<title>\"]\t: Add new note"
+    echo -e "  -e | --edit=[<note>]\t\t: Edit note"
+    echo -e "  -d | --delete=[<note> | all]	: Delete single note or all notes at once"
+    echo -e "  -s | --show=[<note>]\t\t: Display note using your favourite PAGER"
+    echo -e "  -r | --restore=[<dir>]\t: Restore a previous backup from dir"
     echo -e "  -v | --version\t\t: Print version"
     echo -e "  --userconf\t\t\t: Export User config file"
     echo -e "  --backup [<dest>]\t\t: Backup your data in your destination folder"
     echo ""
+}
+
+function configtext() {
+    cat << __NOWCONF__ 
+${BASENAME} configuration is:
+
+base directory:     ${BASEDIR}/
+notes archive:      ${NOTESDIR}/
+notes database:     ${DB}
+rc file:        $RCFILE
+debug file:     /tmp/debug_bash-note.log
+
+text editor:        ${EDITOR}
+terminal:       ${TERMINAL}
+jq executable:      ${JQ}
+PAGER:                  ${PAGER}
+__NOWCONF__
+
 }
 

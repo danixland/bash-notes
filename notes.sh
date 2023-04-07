@@ -162,22 +162,6 @@ function check_noteID() {
 function helptext() {
     echo "Usage:"
     echo "  $0 [PARAMS] ..."
-    echo ""
-	cat << __NOWCONF__ 
-${BASENAME} configuration is:
-
-base directory:		${BASEDIR}/
-notes archive:		${NOTESDIR}/
-notes database:		${DB}
-rc file:		$RCFILE
-debug file:		/tmp/debug_bash-note.log
-
-text editor:		${EDITOR}
-terminal:		${TERMINAL}
-jq executable:		${JQ}
-PAGER:                  ${PAGER}
-__NOWCONF__
-
 	echo ""
     echo "${BASENAME} parameters are:"
     echo -e "  -h | --help\t\t\t: This help text"
@@ -185,14 +169,33 @@ __NOWCONF__
     echo -e "\t\t\t\t  (without this option the output is formatted)"
     echo -e "\t\t\t\t  (this option must precede all others)"
     echo -e "  -l | --list\t\t\t: List existing notes"
-    echo -e "  -a | --add [\"<title>\"]\t: Add new note"
-    echo -e "  -e | --edit [<note>]\t\t: Edit note"
-    echo -e "  -d | --delete [<note> | all]	: Delete single note or all notes at once"
-    echo -e "  -s | --show [<note>]\t\t: Display note using your favourite PAGER"
+    echo -e "  -a | --add=[\"<title>\"]\t: Add new note"
+    echo -e "  -e | --edit=[<note>]\t\t: Edit note"
+    echo -e "  -d | --delete=[<note> | all]	: Delete single note or all notes at once"
+    echo -e "  -s | --show=[<note>]\t\t: Display note using your favourite PAGER"
+    echo -e "  -r | --restore=[<dir>]\t: Restore a previous backup from dir"
     echo -e "  -v | --version\t\t: Print version"
     echo -e "  --userconf\t\t\t: Export User config file"
     echo -e "  --backup [<dest>]\t\t: Backup your data in your destination folder"
     echo ""
+}
+
+function configtext() {
+    cat << __NOWCONF__ 
+${BASENAME} configuration is:
+
+base directory:     ${BASEDIR}/
+notes archive:      ${NOTESDIR}/
+notes database:     ${DB}
+rc file:        $RCFILE
+debug file:     /tmp/debug_bash-note.log
+
+text editor:        ${EDITOR}
+terminal:       ${TERMINAL}
+jq executable:      ${JQ}
+PAGER:                  ${PAGER}
+__NOWCONF__
+
 }
 
 function addnote() {
@@ -246,16 +249,57 @@ function backup_data() {
     fi
     # ok, we have a backup directory
     if [ -r $RCFILE ]; then
-    	BCKUP_COMM=$(rsync -avz --progress ${RCFILE} ${BASEDIR}/* ${BACKUPDIR})
+    	BCKUP_COMM=$(rsync -avz --progress ${RCFILE}* ${BASEDIR}/* ${BACKUPDIR})
     else
     	BCKUP_COMM=$(rsync -avz --progress ${BASEDIR}/* ${BACKUPDIR})
     fi
     # run the command
     if [ "$BCKUP_COMM" ]; then	
-	    echo -e "BASE directory:\t\t$BASEDIR"
+	    echo -e "All files backed up."
 	    echo -e "BACKUP directory:\t$BACKUPDIR"
+	    tree $BACKUPDIR | $PAGER
 	    echo; echo "BACKUP COMPLETED"
 	fi
+}
+
+function backup_restore() {
+	BACKUPDIR="$1"
+	echo "restoring backup from $BACKUPDIR"
+	echo "This will overwrite all your notes and configurations with the backup."
+	read -r -p "Do you want to continue? (y/N) " ANSWER
+	case $ANSWER in
+		y|Y )
+			# restoring rc file
+			BACKUPRC=$(basename $RCFILE)
+			if [ -r ${BACKUPDIR}/${BACKUPRC} ]; then
+				if [ -r ${RCFILE} ]; then
+					echo "Backing up current '${RCFILE}'...."
+					mv -f ${RCFILE} ${RCFILE}.$(date +%Y%m%d_%H%M)
+				fi
+				cp --verbose ${BACKUPDIR}/${BACKUPRC} $RCFILE
+			fi
+			# restoring notes directory
+			if [ -d $BACKUPDIR/notes ]; then
+				if [ $(/bin/ls -A $NOTESDIR) ]; then
+					rm --verbose $NOTESDIR/*
+				fi
+				cp -r --verbose $BACKUPDIR/notes $BASEDIR
+			fi
+			# restoring database
+			BACKUPDB=$(basename $DB)
+			if [ -f ${BACKUPDIR}/${BACKUPDB} ]; then
+				if [ -r ${DB} ]; then
+					echo "Backing up current '${DB}'...."
+					mv -f ${DB} ${DB}.$(date +%Y%m%d_%H%M)
+				fi
+				cp --verbose ${BACKUPDIR}/${BACKUPDB} $DB
+			fi
+			;;
+		* )
+			echo "No changes made. Exiting"
+			exit
+			;;
+	esac
 }
 
 function editnote() {
@@ -372,7 +416,7 @@ function shownote() {
 	fi
 }
 # shellcheck disable=SC2006
-GOPT=$(getopt -o hvpla::e::d::s:: --long help,version,list,plain,userconf,backup::,add::,edit::,delete::,show:: -n 'bash-notes' -- "$@")
+GOPT=$(getopt -o hvplr::a::e::d::s:: --long help,version,list,plain,userconf,restore::,backup::,add::,edit::,delete::,show:: -n 'bash-notes' -- "$@")
 
 # shellcheck disable=SC2181
 if [ $? != 0 ] ; then helptext >&2 ; exit 1 ; fi
@@ -449,6 +493,19 @@ while true; do
 			esac
 			shift 2
 			shownote "$NOTE"
+			exit
+			;;
+		-r | --restore )
+			case "$2" in
+				'' )
+					read -r -p "Backup Dir: " RDIR
+					;;
+				* )
+					RDIR=$2
+					;;
+			esac
+			shift 2
+			backup_restore $RDIR
 			exit
 			;;
 		--userconf )
