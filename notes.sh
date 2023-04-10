@@ -379,6 +379,7 @@ function rmnote() {
 		if [ ! "$OK" ]; then
 			echo "invalid note \"$NOTE\""
 			echo "Use the note ID that you can fetch after listing your notes"
+			sleep 1
 			exit 1
 		fi
 
@@ -393,8 +394,11 @@ function rmnote() {
 			mv $TMPDB $DB
 			rm $NOTESDIR/$FILE
 			echo "Deleted note $TITLE"
+			sleep 1
+			exit
 		else
 			 echo "note not found"
+			 sleep 1
 			 exit 1
 		fi
 	fi
