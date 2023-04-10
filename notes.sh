@@ -199,13 +199,36 @@ __NOWCONF__
 
 }
 
+# this function returns a random 2 words title
+function random_title() {
+    # Constants 
+    X=0
+    DICT=/usr/share/dict/words
+    OUTPUT=""
+     
+    # total number of non-random words available 
+    COUNT=$(cat $DICT | wc -l)
+     
+    # while loop to generate random words  
+    while [ "$X" -lt 2 ] 
+    do 
+        RAND=$(od -N3 -An -i /dev/urandom | awk -v f=0 -v r="$COUNT" '{printf "%i\n", f + r * $1 / 16777216}')
+        OUTPUT+="$(sed `echo $RAND`"q;d" $DICT)"
+        (("X = X + 1"))
+        [[ $X -eq 1 ]] && OUTPUT+=" "
+    done
+
+    echo $OUTPUT
+}
+
 function addnote() {
 	# remove eventually existing temp DB file
 	if [[ -f $TMPDB ]]; then
 		rm $TMPDB
 	fi
 
-	NOTETITLE="$1"
+	RTITLE=$(random_title)
+	[[ -z "$1" ]] && NOTETITLE="$RTITLE" || NOTETITLE="$1"
 	echo "adding new note - \"$NOTETITLE\""
 	# shellcheck disable=SC2086
 	LASTID=$($JQ '.notes[-1].id // 0 | tonumber' $DB)

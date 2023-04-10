@@ -4,7 +4,8 @@ function addnote() {
 		rm $TMPDB
 	fi
 
-	NOTETITLE="$1"
+	RTITLE=$(random_title)
+	[[ -z "$1" ]] && NOTETITLE="$RTITLE" || NOTETITLE="$1"
 	echo "adding new note - \"$NOTETITLE\""
 	# shellcheck disable=SC2086
 	LASTID=$($JQ '.notes[-1].id // 0 | tonumber' $DB)
