@@ -17,7 +17,7 @@ PID=$$
 BASENAME=$( basename "$0" )
 NOW=$(date +%s)
 
-VERSION="0.3"
+VERSION="0.4git"
 DBVERSION=${VERSION}_${NOW}
 
 set_defaults() {
@@ -25,6 +25,8 @@ set_defaults() {
 JQ=${JQ:-/usr/bin/jq}
 EDITOR=${EDITOR:-/usr/bin/vim}
 TERMINAL=${TERMINAL:-/usr/bin/alacritty}
+# Git binary only used if $USEGIT is true - See below
+GIT=${GIT:-/usr/bin/git}
 # add options for your terminal. Remember to add the last option to execute
 # your editor program, otherwise the script will fail.
 # see example in the addnote function
@@ -42,6 +44,13 @@ BASEDIR=${BASEDIR:-~/.local/share/bash-notes}
 DB=${BASEDIR}/db.json
 # directory containing the actual notes
 NOTESDIR=${BASEDIR}/notes
+
+### GIT SUPPORT
+
+# If you want to store your notes in a git repository set this to true
+USEGIT=true
+# Address of your remote repository
+GITREMOTE=${GITREMOTE:-""}
 
 } # end set_defaults, do not change this line.
 

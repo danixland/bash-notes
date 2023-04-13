@@ -17,7 +17,7 @@ PID=$$
 BASENAME=$( basename "$0" )
 NOW=$(date +%s)
 
-VERSION="0.3"
+VERSION="0.4git"
 DBVERSION=${VERSION}_${NOW}
 
 set_defaults() {
@@ -25,6 +25,8 @@ set_defaults() {
 JQ=${JQ:-/usr/bin/jq}
 EDITOR=${EDITOR:-/usr/bin/vim}
 TERMINAL=${TERMINAL:-/usr/bin/alacritty}
+# Git binary only used if $USEGIT is true - See below
+GIT=${GIT:-/usr/bin/git}
 # add options for your terminal. Remember to add the last option to execute
 # your editor program, otherwise the script will fail.
 # see example in the addnote function
@@ -42,6 +44,13 @@ BASEDIR=${BASEDIR:-~/.local/share/bash-notes}
 DB=${BASEDIR}/db.json
 # directory containing the actual notes
 NOTESDIR=${BASEDIR}/notes
+
+### GIT SUPPORT
+
+# If you want to store your notes in a git repository set this to true
+USEGIT=true
+# Address of your remote repository
+GITREMOTE=${GITREMOTE:-""}
 
 } # end set_defaults, do not change this line.
 
@@ -220,6 +229,44 @@ function random_title() {
 
     echo $OUTPUT
 }
+
+# returns true if the argument provided directory is a git repository
+is_git_repo() {
+    DIR=$1
+    if [[ -d $DIR ]]; then
+        cd $DIR
+        if git rev-parse 2>/dev/null; then
+            true
+        else
+            false
+        fi
+    fi
+}
+
+# sync local repository to remote
+gitsync() {
+    echo "Syncing notes with git on remote \"$GITREMOTE\""
+    cd $BASEDIR
+    $GIT pull
+}
+
+# check for USEGIT and subsequent variables
+if [[ $USEGIT && -n $GITREMOTE ]]; then
+    # GIT is a go.
+    if ! is_git_repo $BASEDIR; then
+        # initializing git repository
+        cd $BASEDIR
+        $GIT init
+        echo "adding all files to git"
+        $GIT add .
+        $GIT commit -m "$(basename $0) - initial commit"
+        $GIT remote add origin $GITREMOTE
+        $GIT push -u origin master
+    fi
+elif [[ $USEGIT && -z $GITREMOTE ]]; then
+    echo "GITREMOTE variable not set. reverting USEGIT to false"
+    USEGIT=false
+fi
 
 function addnote() {
 	# remove eventually existing temp DB file
@@ -444,7 +491,7 @@ function shownote() {
 	fi
 }
 # shellcheck disable=SC2006
-GOPT=$(getopt -o hvplr::a::e::d::s:: --long help,version,list,plain,userconf,restore::,backup::,add::,edit::,delete::,show:: -n 'bash-notes' -- "$@")
+GOPT=$(getopt -o hvplr::a::e::d::s:: --long help,version,list,plain,userconf,sync,restore::,backup::,add::,edit::,delete::,show:: -n 'bash-notes' -- "$@")
 
 # shellcheck disable=SC2181
 if [ $? != 0 ] ; then helptext >&2 ; exit 1 ; fi
@@ -534,6 +581,10 @@ while true; do
 			esac
 			shift 2
 			backup_restore $RDIR
+			exit
+			;;
+		--sync )
+			gitsync
 			exit
 			;;
 		--userconf )
