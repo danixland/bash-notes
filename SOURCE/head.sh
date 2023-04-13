@@ -138,6 +138,9 @@ jq executable:		${JQ}
 		"version": "${VERSION}",
 		"dbversion": "${DBVERSION}"
 	},
+	"git": {
+		"lastpull": ""
+	},
 	"notes": []
 }
 __EOL__

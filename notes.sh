@@ -138,6 +138,9 @@ jq executable:		${JQ}
 		"version": "${VERSION}",
 		"dbversion": "${DBVERSION}"
 	},
+	"git": {
+		"lastpull": ""
+	},
 	"notes": []
 }
 __EOL__
@@ -320,9 +323,9 @@ function backup_data() {
     fi
     # ok, we have a backup directory
     if [ -r $RCFILE ]; then
-    	BCKUP_COMM=$(rsync -avz --progress ${RCFILE}* ${BASEDIR}/* ${BACKUPDIR})
+    	BCKUP_COMM=$(rsync -avz --progress ${RCFILE}* ${BASEDIR}/ ${BACKUPDIR})
     else
-    	BCKUP_COMM=$(rsync -avz --progress ${BASEDIR}/* ${BACKUPDIR})
+    	BCKUP_COMM=$(rsync -avz --progress ${BASEDIR}/ ${BACKUPDIR})
     fi
     # run the command
     if [ "$BCKUP_COMM" ]; then	
@@ -364,6 +367,13 @@ function backup_restore() {
 					mv -f ${DB} ${DB}.$(date +%Y%m%d_%H%M)
 				fi
 				cp --verbose ${BACKUPDIR}/${BACKUPDB} $DB
+			fi
+			# restoring git repo subdirectory
+			if [ -d $BACKUPDIR/.git ]; then
+				if [ /bin/ls -A ${BASEDIR}/.git ]; then
+					rm -rf ${BASEDIR}/.git
+				fi
+				cp -r --verbose ${BACKUPDIR}/.git ${BASEDIR}/
 			fi
 			;;
 		* )
