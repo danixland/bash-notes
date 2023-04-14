@@ -51,6 +51,8 @@ NOTESDIR=${BASEDIR}/notes
 USEGIT=true
 # Address of your remote repository
 GITREMOTE=${GITREMOTE:-""}
+# How long should we wait (in seconds) between sync on the git remote. Default 3600 (1 hour)
+GITSYNCDELAY=${GITSYNCDELAY:-3600}
 
 } # end set_defaults, do not change this line.
 

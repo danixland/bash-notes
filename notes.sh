@@ -51,6 +51,8 @@ NOTESDIR=${BASEDIR}/notes
 USEGIT=true
 # Address of your remote repository
 GITREMOTE=${GITREMOTE:-""}
+# How long should we wait (in seconds) between sync on the git remote. Default 3600 (1 hour)
+GITSYNCDELAY=${GITSYNCDELAY:-3600}
 
 } # end set_defaults, do not change this line.
 
@@ -91,7 +93,7 @@ fi
 echo $PID > "$PIDFILE"
 
 # Export config to file
-function export_config() {
+export_config() {
 	if [ -r ${RCFILE} ]; then
 		echo "Backing up current '${RCFILE}'...."
 		mv -f ${RCFILE} ${RCFILE}.$(date +%Y%m%d_%H%M)
@@ -112,7 +114,7 @@ function export_config() {
 
 # we should expand on this function to add a sample note and explain a little bit
 # how the program works.
-function firstrun() {
+firstrun() {
 	[ -f $RCFILE ] && RC=$RCFILE || RC="none"
 
 	clear
@@ -159,7 +161,7 @@ if [[ ! -d $NOTESDIR ]]; then
 	firstrun
 fi
 # check if input is a number, returns false or the number itself
-function check_noteID() {
+check_noteID() {
 	IN=$1
 	case $IN in
 		''|*[!0-9]*)
@@ -171,7 +173,7 @@ function check_noteID() {
 	esac
 }
 
-function helptext() {
+helptext() {
     echo "Usage:"
     echo "  $0 [PARAMS] [note ID]..."
 	echo ""
@@ -193,7 +195,7 @@ function helptext() {
     echo -e "if a non option is passed and is a valid note ID, the note will be displayed."
 }
 
-function configtext() {
+configtext() {
     cat << __NOWCONF__ 
 ${BASENAME} configuration is:
 
@@ -212,7 +214,7 @@ __NOWCONF__
 }
 
 # this function returns a random 2 words title
-function random_title() {
+random_title() {
     # Constants 
     X=0
     DICT=/usr/share/dict/words
@@ -248,9 +250,21 @@ is_git_repo() {
 
 # sync local repository to remote
 gitsync() {
-    echo "Syncing notes with git on remote \"$GITREMOTE\""
-    cd $BASEDIR
-    $GIT pull
+    NOWSYNC=$(date +%s)
+    # LASTSYNC is the last time we synced to the remote, or 0 if it's the first time.
+    LASTSYNC=$($JQ -r '.git["lastpull"] // 0' "$DB")
+    [ $PLAIN == false ] && echo "Syncing notes with git on remote \"$GITREMOTE\""
+    SYNCDIFF=$(( ${NOWSYNC} - ${LASTSYNC} ))
+    if (( $SYNCDIFF > $GITSYNCDELAY )); then
+        #more than our delay time has passed. We can sync again.
+        $JQ --arg n "$NOWSYNC" '.git["lastpull"] = $n' "$DB" > $TMPDB
+        mv $TMPDB $DB
+        cd $BASEDIR
+        $GIT pull
+    else
+        # Last synced less than $GITSYNCDELAY seconds ago. We shall wait
+        [ $PLAIN == false ] && echo "Last synced less than $GITSYNCDELAY seconds ago. We shall wait"
+    fi
 }
 
 # check for USEGIT and subsequent variables
@@ -271,7 +285,7 @@ elif [[ $USEGIT && -z $GITREMOTE ]]; then
     USEGIT=false
 fi
 
-function addnote() {
+addnote() {
 	# remove eventually existing temp DB file
 	if [[ -f $TMPDB ]]; then
 		rm $TMPDB
@@ -295,7 +309,7 @@ function addnote() {
 	# shellcheck disable=SC2086,SC2091
 	$(${TERMINAL} ${TERM_OPTS} ${EDITOR} ${NOTESDIR}/${NOW})
 }
-function backup_data() {
+backup_data() {
 	BACKUPDIR="$1"
     echo "backing up data in $BACKUPDIR"
 
@@ -336,7 +350,7 @@ function backup_data() {
 	fi
 }
 
-function backup_restore() {
+backup_restore() {
 	BACKUPDIR="$1"
 	echo "restoring backup from $BACKUPDIR"
 	echo "This will overwrite all your notes and configurations with the backup."
@@ -383,7 +397,7 @@ function backup_restore() {
 	esac
 }
 
-function editnote() {
+editnote() {
 	NOTE=$1
 	# shellcheck disable=SC2155
 	local OK=$(check_noteID "$NOTE")
@@ -406,7 +420,9 @@ function editnote() {
 		 exit 1
 	fi
 }
-function listnotes() {
+listnotes() {
+	# attempt syncing before listing all notes
+	gitsync
 	# [ $PLAIN == true ] && echo "output is plain text" || echo "output is colored"
 	if [[ $(ls -A "$NOTESDIR") ]]; then
 		if [ $PLAIN == false ]; then
@@ -428,7 +444,7 @@ function listnotes() {
 		echo "no notes yet. You can add your first one with: ${BASENAME} -a \"your note title\""
 	fi
 }
-function rmnote() {
+rmnote() {
 	# remove eventually existing temp DB file
 	if [[ -f $TMPDB ]]; then
 		rm $TMPDB
@@ -483,7 +499,7 @@ function rmnote() {
 		fi
 	fi
 }
-function shownote() {
+shownote() {
 	NOTE=$1
 
 	# shellcheck disable=SC2155

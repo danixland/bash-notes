@@ -13,9 +13,21 @@ is_git_repo() {
 
 # sync local repository to remote
 gitsync() {
-    echo "Syncing notes with git on remote \"$GITREMOTE\""
-    cd $BASEDIR
-    $GIT pull
+    NOWSYNC=$(date +%s)
+    # LASTSYNC is the last time we synced to the remote, or 0 if it's the first time.
+    LASTSYNC=$($JQ -r '.git["lastpull"] // 0' "$DB")
+    [ $PLAIN == false ] && echo "Syncing notes with git on remote \"$GITREMOTE\""
+    SYNCDIFF=$(( ${NOWSYNC} - ${LASTSYNC} ))
+    if (( $SYNCDIFF > $GITSYNCDELAY )); then
+        #more than our delay time has passed. We can sync again.
+        $JQ --arg n "$NOWSYNC" '.git["lastpull"] = $n' "$DB" > $TMPDB
+        mv $TMPDB $DB
+        cd $BASEDIR
+        $GIT pull
+    else
+        # Last synced less than $GITSYNCDELAY seconds ago. We shall wait
+        [ $PLAIN == false ] && echo "Last synced less than $GITSYNCDELAY seconds ago. We shall wait"
+    fi
 }
 
 # check for USEGIT and subsequent variables
