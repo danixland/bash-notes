@@ -53,6 +53,8 @@ USEGIT=true
 GITREMOTE=${GITREMOTE:-""}
 # How long should we wait (in seconds) between sync on the git remote. Default 3600 (1 hour)
 GITSYNCDELAY=${GITSYNCDELAY:-3600}
+# The name of this client. Defaults to the output of hostname
+GITCLIENT=${GITCLIENT:-""}
 
 } # end set_defaults, do not change this line.
 

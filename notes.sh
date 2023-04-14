@@ -53,6 +53,8 @@ USEGIT=true
 GITREMOTE=${GITREMOTE:-""}
 # How long should we wait (in seconds) between sync on the git remote. Default 3600 (1 hour)
 GITSYNCDELAY=${GITSYNCDELAY:-3600}
+# The name of this client. Defaults to the output of hostname
+GITCLIENT=${GITCLIENT:-""}
 
 } # end set_defaults, do not change this line.
 
@@ -235,6 +237,10 @@ random_title() {
     echo $OUTPUT
 }
 
+# check if GITCLIENT has been set or set it to the output of hostname
+if [ -z $GITCLIENT ]; then
+    GITCLIENT=$( hostname )
+fi
 # returns true if the argument provided directory is a git repository
 is_git_repo() {
     DIR=$1
@@ -250,20 +256,39 @@ is_git_repo() {
 
 # sync local repository to remote
 gitsync() {
-    NOWSYNC=$(date +%s)
-    # LASTSYNC is the last time we synced to the remote, or 0 if it's the first time.
-    LASTSYNC=$($JQ -r '.git["lastpull"] // 0' "$DB")
-    [ $PLAIN == false ] && echo "Syncing notes with git on remote \"$GITREMOTE\""
-    SYNCDIFF=$(( ${NOWSYNC} - ${LASTSYNC} ))
-    if (( $SYNCDIFF > $GITSYNCDELAY )); then
-        #more than our delay time has passed. We can sync again.
-        $JQ --arg n "$NOWSYNC" '.git["lastpull"] = $n' "$DB" > $TMPDB
-        mv $TMPDB $DB
-        cd $BASEDIR
-        $GIT pull
+    if [[ $USEGIT && -n $GITREMOTE ]]; then
+        NOWSYNC=$(date +%s)
+        # LASTSYNC is the last time we synced to the remote, or 0 if it's the first time.
+        LASTSYNC=$($JQ -r '.git["lastpull"] // 0' "$DB")
+        [ $PLAIN == false ] && echo "Syncing notes with git on remote \"$GITREMOTE\""
+        SYNCDIFF=$(( ${NOWSYNC} - ${LASTSYNC} ))
+        if (( $SYNCDIFF > $GITSYNCDELAY )); then
+            #more than our delay time has passed. We can sync again.
+            $JQ --arg n "$NOWSYNC" '.git["lastpull"] = $n' "$DB" > $TMPDB
+            mv $TMPDB $DB
+            cd $BASEDIR
+            $GIT pull
+        else
+            # Last synced less than $GITSYNCDELAY seconds ago. We shall wait
+            [ $PLAIN == false ] && echo "Last synced less than $GITSYNCDELAY seconds ago. We shall wait"
+        fi
     else
-        # Last synced less than $GITSYNCDELAY seconds ago. We shall wait
-        [ $PLAIN == false ] && echo "Last synced less than $GITSYNCDELAY seconds ago. We shall wait"
+        # no git, so we just keep going
+        true
+    fi
+}
+
+# add note to git and push it to remote
+gitadd() {
+    if [[ $USEGIT && -n $GITREMOTE ]]; then
+        [ $PLAIN == false ] && echo "Adding note to remote \"$GITREMOTE\""
+        cd $BASEDIR
+        $GIT add .
+        $GIT commit -m "$(basename $0) - adding note from ${GITCLIENT}"
+        $GIT push origin master
+    else
+        # no git, so we just keep going
+        true
     fi
 }
 
@@ -276,7 +301,7 @@ if [[ $USEGIT && -n $GITREMOTE ]]; then
         $GIT init
         echo "adding all files to git"
         $GIT add .
-        $GIT commit -m "$(basename $0) - initial commit"
+        $GIT commit -m "$(basename $0) - initial commit from ${GITCLIENT}"
         $GIT remote add origin $GITREMOTE
         $GIT push -u origin master
     fi
@@ -286,6 +311,8 @@ elif [[ $USEGIT && -z $GITREMOTE ]]; then
 fi
 
 addnote() {
+	# attempt syncing before adding a note
+	gitsync
 	# remove eventually existing temp DB file
 	if [[ -f $TMPDB ]]; then
 		rm $TMPDB
@@ -308,6 +335,8 @@ addnote() {
 	# alacritty --class notes --title notes -e /usr/bin/vim ...
 	# shellcheck disable=SC2086,SC2091
 	$(${TERMINAL} ${TERM_OPTS} ${EDITOR} ${NOTESDIR}/${NOW})
+	# add note to git and push to remote
+	gitadd
 }
 backup_data() {
 	BACKUPDIR="$1"

@@ -1,4 +1,6 @@
 addnote() {
+	# attempt syncing before adding a note
+	gitsync
 	# remove eventually existing temp DB file
 	if [[ -f $TMPDB ]]; then
 		rm $TMPDB
@@ -21,4 +23,6 @@ addnote() {
 	# alacritty --class notes --title notes -e /usr/bin/vim ...
 	# shellcheck disable=SC2086,SC2091
 	$(${TERMINAL} ${TERM_OPTS} ${EDITOR} ${NOTESDIR}/${NOW})
+	# add note to git and push to remote
+	gitadd
 }
