@@ -1,4 +1,4 @@
-function shownote() {
+shownote() {
 	NOTE=$1
 
 	# shellcheck disable=SC2155

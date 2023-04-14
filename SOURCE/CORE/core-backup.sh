@@ -1,4 +1,4 @@
-function backup_data() {
+backup_data() {
 	BACKUPDIR="$1"
     echo "backing up data in $BACKUPDIR"
 
@@ -39,7 +39,7 @@ function backup_data() {
 	fi
 }
 
-function backup_restore() {
+backup_restore() {
 	BACKUPDIR="$1"
 	echo "restoring backup from $BACKUPDIR"
 	echo "This will overwrite all your notes and configurations with the backup."

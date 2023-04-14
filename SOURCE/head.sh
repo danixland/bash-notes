@@ -91,7 +91,7 @@ fi
 echo $PID > "$PIDFILE"
 
 # Export config to file
-function export_config() {
+export_config() {
 	if [ -r ${RCFILE} ]; then
 		echo "Backing up current '${RCFILE}'...."
 		mv -f ${RCFILE} ${RCFILE}.$(date +%Y%m%d_%H%M)
@@ -112,7 +112,7 @@ function export_config() {
 
 # we should expand on this function to add a sample note and explain a little bit
 # how the program works.
-function firstrun() {
+firstrun() {
 	[ -f $RCFILE ] && RC=$RCFILE || RC="none"
 
 	clear

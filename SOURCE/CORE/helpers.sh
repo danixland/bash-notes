@@ -1,5 +1,5 @@
 # check if input is a number, returns false or the number itself
-function check_noteID() {
+check_noteID() {
 	IN=$1
 	case $IN in
 		''|*[!0-9]*)
@@ -11,7 +11,7 @@ function check_noteID() {
 	esac
 }
 
-function helptext() {
+helptext() {
     echo "Usage:"
     echo "  $0 [PARAMS] [note ID]..."
 	echo ""
@@ -33,7 +33,7 @@ function helptext() {
     echo -e "if a non option is passed and is a valid note ID, the note will be displayed."
 }
 
-function configtext() {
+configtext() {
     cat << __NOWCONF__ 
 ${BASENAME} configuration is:
 
@@ -52,7 +52,7 @@ __NOWCONF__
 }
 
 # this function returns a random 2 words title
-function random_title() {
+random_title() {
     # Constants 
     X=0
     DICT=/usr/share/dict/words

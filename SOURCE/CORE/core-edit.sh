@@ -1,4 +1,4 @@
-function editnote() {
+editnote() {
 	NOTE=$1
 	# shellcheck disable=SC2155
 	local OK=$(check_noteID "$NOTE")

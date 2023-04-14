@@ -1,4 +1,4 @@
-function listnotes() {
+listnotes() {
 	# [ $PLAIN == true ] && echo "output is plain text" || echo "output is colored"
 	if [[ $(ls -A "$NOTESDIR") ]]; then
 		if [ $PLAIN == false ]; then

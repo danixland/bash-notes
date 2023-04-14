@@ -1,4 +1,4 @@
-function addnote() {
+addnote() {
 	# remove eventually existing temp DB file
 	if [[ -f $TMPDB ]]; then
 		rm $TMPDB
