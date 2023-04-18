@@ -16,6 +16,7 @@ editnote() {
 		echo "editing note $TITLE"
 		# shellcheck disable=SC2086,SC2091
 		$(${TERMINAL} ${TERM_OPTS} ${EDITOR} ${NOTESDIR}/${FILE})
+		gitedit
 	else
 		 echo "note not found"
 		 exit 1

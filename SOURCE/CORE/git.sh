@@ -62,6 +62,47 @@ gitadd() {
     fi
 }
 
+# edited note added to git and pushed it to remote
+gitedit() {
+    if [[ $USEGIT && -n $GITREMOTE ]]; then
+        [ $PLAIN == false ] && echo "Editing note on remote \"$GITREMOTE\""
+        cd $BASEDIR
+        $GIT add .
+        $GIT commit -m "$(basename $0) - ${GITCLIENT} note edited."
+        $GIT push origin master
+    else
+        # no git, so we just keep going
+        true
+    fi
+}
+
+# add note to git and push it to remote
+gitremove() {
+    NOTE=$1
+    FILE=$2
+    if [[ $USEGIT && -n $GITREMOTE ]]; then
+        [ $PLAIN == false ] && echo "Deleting notes from remote \"$GITREMOTE\""
+        if [ "all" == $NOTE ];then
+            echo "Deleting all notes"
+            cd $BASEDIR
+            $GIT rm notes/*
+            $GIT commit -m "$(basename $0) - ${GITCLIENT} removing all notes."
+            $GIT push origin master
+        else
+            echo "Deleting note ID ${NOTE}"
+            local OK=$(check_noteID "$NOTE")
+            cd $BASEDIR
+            $GIT rm notes/${FILE}
+            $GIT add .
+            $GIT commit -m "$(basename $0) - ${GITCLIENT} removing note ID ${NOTE}."
+            $GIT push origin master
+        fi
+    else
+        # no git, so we just keep going
+        true
+    fi
+}
+
 # check for USEGIT and subsequent variables
 if [[ $USEGIT && -n $GITREMOTE ]]; then
     # GIT is a go.

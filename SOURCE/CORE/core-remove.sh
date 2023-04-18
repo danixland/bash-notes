@@ -16,6 +16,7 @@ rmnote() {
 				mv $TMPDB $DB
 				# shellcheck disable=SC2086
 				rm $NOTESDIR/*
+				gitremove "all"
 				echo "Deleted all notes"
 				;;
 			* )
@@ -43,6 +44,7 @@ rmnote() {
 			# shellcheck disable=SC2086
 			mv $TMPDB $DB
 			rm $NOTESDIR/$FILE
+			gitremove $OK $FILE
 			echo "Deleted note $TITLE"
 			sleep 1
 			exit
