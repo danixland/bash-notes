@@ -52,7 +52,7 @@ USEGIT=true
 # Address of your remote repository
 GITREMOTE=${GITREMOTE:-""}
 # How long should we wait (in seconds) between sync on the git remote. Default 3600 (1 hour)
-GITSYNCDELAY=${GITSYNCDELAY:-3600}
+GITSYNCDELAY=${GITSYNCDELAY:-"3600"}
 # The name of this client. Defaults to the output of hostname
 GITCLIENT=${GITCLIENT:-""}
 
@@ -198,21 +198,24 @@ helptext() {
 }
 
 configtext() {
-    cat << __NOWCONF__ 
-${BASENAME} configuration is:
+    [ $USEGIT ] && GITUSE="enabled" || GITUSE="disabled"
+    clear
+    echo -e "${BASENAME} configuration is:"
 
-base directory:     ${BASEDIR}/
-notes archive:      ${NOTESDIR}/
-notes database:     ${DB}
-rc file:        $RCFILE
-debug file:     /tmp/debug_bash-note.log
+    echo -e "base directory:     ${BASEDIR}/"
+    echo -e "notes archive:      ${NOTESDIR}/"
+    echo -e "notes database:     ${DB}"
+    echo -e "rc file:            $RCFILE"
+    echo -e "debug file:         /tmp/debug_bash-note.log"
 
-text editor:        ${EDITOR}
-terminal:       ${TERMINAL}
-jq executable:      ${JQ}
-PAGER:                  ${PAGER}
-__NOWCONF__
+    echo -e "text editor:        ${EDITOR}"
+    echo -e "terminal:           ${TERMINAL}"
+    echo -e "jq executable:      ${JQ}"
+    echo -e "PAGER:              ${PAGER}"
 
+    echo -e "GIT use:            ${GITUSE}"
+    echo -e "GIT remote:         ${GITREMOTE}"
+    echo -e "GIT sync delay:     ${GITSYNCDELAY}"
 }
 
 # this function returns a random 2 words title
@@ -238,7 +241,7 @@ random_title() {
 }
 
 # check if GITCLIENT has been set or set it to the output of hostname
-if [ -z $GITCLIENT ]; then
+if [ -z "$GITCLIENT" ]; then
     GITCLIENT=$( hostname )
 fi
 # returns true if the argument provided directory is a git repository
@@ -255,22 +258,31 @@ is_git_repo() {
 }
 
 # sync local repository to remote
+# accepts -f parameter to skip last sync check
 gitsync() {
+    FORCE=$1
     if [[ $USEGIT && -n $GITREMOTE ]]; then
-        NOWSYNC=$(date +%s)
-        # LASTSYNC is the last time we synced to the remote, or 0 if it's the first time.
-        LASTSYNC=$($JQ -r '.git["lastpull"] // 0' "$DB")
         [ $PLAIN == false ] && echo "Syncing notes with git on remote \"$GITREMOTE\""
-        SYNCDIFF=$(( ${NOWSYNC} - ${LASTSYNC} ))
-        if (( $SYNCDIFF > $GITSYNCDELAY )); then
-            #more than our delay time has passed. We can sync again.
+        NOWSYNC=$(date +%s)
+        if [[ $FORCE == "-f" ]]; then
             $JQ --arg n "$NOWSYNC" '.git["lastpull"] = $n' "$DB" > $TMPDB
             mv $TMPDB $DB
             cd $BASEDIR
             $GIT pull
         else
-            # Last synced less than $GITSYNCDELAY seconds ago. We shall wait
-            [ $PLAIN == false ] && echo "Last synced less than $GITSYNCDELAY seconds ago. We shall wait"
+            # LASTSYNC is the last time we synced to the remote, or 0 if it's the first time.
+            LASTSYNC=$($JQ -r '.git["lastpull"] // 0' "$DB")
+            SYNCDIFF=$(( ${NOWSYNC} - ${LASTSYNC} ))
+            if (( $SYNCDIFF > $GITSYNCDELAY )); then
+                #more than our delay time has passed. We can sync again.
+                $JQ --arg n "$NOWSYNC" '.git["lastpull"] = $n' "$DB" > $TMPDB
+                mv $TMPDB $DB
+                cd $BASEDIR
+                $GIT pull
+            else
+                # Last synced less than $GITSYNCDELAY seconds ago. We shall wait
+                [ $PLAIN == false ] && echo "Last synced less than $GITSYNCDELAY seconds ago. We shall wait"
+            fi
         fi
     else
         # no git, so we just keep going
@@ -312,7 +324,7 @@ fi
 
 addnote() {
 	# attempt syncing before adding a note
-	gitsync
+	gitsync -f
 	# remove eventually existing temp DB file
 	if [[ -f $TMPDB ]]; then
 		rm $TMPDB
@@ -546,7 +558,7 @@ shownote() {
 	fi
 }
 # shellcheck disable=SC2006
-GOPT=$(getopt -o hvplr::a::e::d::s:: --long help,version,list,plain,userconf,sync,restore::,backup::,add::,edit::,delete::,show:: -n 'bash-notes' -- "$@")
+GOPT=$(getopt -o hvplr::a::e::d::s:: --long help,version,list,plain,userconf,showconf,sync::,restore::,backup::,add::,edit::,delete::,show:: -n 'bash-notes' -- "$@")
 
 # shellcheck disable=SC2181
 if [ $? != 0 ] ; then helptext >&2 ; exit 1 ; fi
@@ -639,7 +651,19 @@ while true; do
 			exit
 			;;
 		--sync )
-			gitsync
+			case "$2" in
+				'' )
+					gitsync
+					;;
+				'-f' )
+					gitsync -f
+					;;
+				* )
+					helptext
+					exit
+					;;
+			esac
+			shift 2
 			exit
 			;;
 		--userconf )
@@ -647,6 +671,10 @@ while true; do
 			# shellcheck disable=SC2317
 			echo "config exported to \"$RCFILE\""
 			# shellcheck disable=SC2317
+			exit
+			;;
+		--showconf )
+			configtext
 			exit
 			;;
 		--backup )

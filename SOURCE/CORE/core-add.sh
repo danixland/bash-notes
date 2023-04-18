@@ -1,6 +1,6 @@
 addnote() {
 	# attempt syncing before adding a note
-	gitsync
+	gitsync -f
 	# remove eventually existing temp DB file
 	if [[ -f $TMPDB ]]; then
 		rm $TMPDB

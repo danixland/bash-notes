@@ -1,5 +1,5 @@
 # shellcheck disable=SC2006
-GOPT=$(getopt -o hvplr::a::e::d::s:: --long help,version,list,plain,userconf,sync,restore::,backup::,add::,edit::,delete::,show:: -n 'bash-notes' -- "$@")
+GOPT=$(getopt -o hvplr::a::e::d::s:: --long help,version,list,plain,userconf,showconf,sync::,restore::,backup::,add::,edit::,delete::,show:: -n 'bash-notes' -- "$@")
 
 # shellcheck disable=SC2181
 if [ $? != 0 ] ; then helptext >&2 ; exit 1 ; fi
@@ -92,7 +92,19 @@ while true; do
 			exit
 			;;
 		--sync )
-			gitsync
+			case "$2" in
+				'' )
+					gitsync
+					;;
+				'-f' )
+					gitsync -f
+					;;
+				* )
+					helptext
+					exit
+					;;
+			esac
+			shift 2
 			exit
 			;;
 		--userconf )
@@ -100,6 +112,10 @@ while true; do
 			# shellcheck disable=SC2317
 			echo "config exported to \"$RCFILE\""
 			# shellcheck disable=SC2317
+			exit
+			;;
+		--showconf )
+			configtext
 			exit
 			;;
 		--backup )

@@ -34,21 +34,24 @@ helptext() {
 }
 
 configtext() {
-    cat << __NOWCONF__ 
-${BASENAME} configuration is:
+    [ $USEGIT ] && GITUSE="enabled" || GITUSE="disabled"
+    clear
+    echo -e "${BASENAME} configuration is:"
 
-base directory:     ${BASEDIR}/
-notes archive:      ${NOTESDIR}/
-notes database:     ${DB}
-rc file:        $RCFILE
-debug file:     /tmp/debug_bash-note.log
+    echo -e "base directory:     ${BASEDIR}/"
+    echo -e "notes archive:      ${NOTESDIR}/"
+    echo -e "notes database:     ${DB}"
+    echo -e "rc file:            $RCFILE"
+    echo -e "debug file:         /tmp/debug_bash-note.log"
 
-text editor:        ${EDITOR}
-terminal:       ${TERMINAL}
-jq executable:      ${JQ}
-PAGER:                  ${PAGER}
-__NOWCONF__
+    echo -e "text editor:        ${EDITOR}"
+    echo -e "terminal:           ${TERMINAL}"
+    echo -e "jq executable:      ${JQ}"
+    echo -e "PAGER:              ${PAGER}"
 
+    echo -e "GIT use:            ${GITUSE}"
+    echo -e "GIT remote:         ${GITREMOTE}"
+    echo -e "GIT sync delay:     ${GITSYNCDELAY}"
 }
 
 # this function returns a random 2 words title

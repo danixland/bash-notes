@@ -1,5 +1,5 @@
 # check if GITCLIENT has been set or set it to the output of hostname
-if [ -z $GITCLIENT ]; then
+if [ -z "$GITCLIENT" ]; then
     GITCLIENT=$( hostname )
 fi
 # returns true if the argument provided directory is a git repository
@@ -16,22 +16,31 @@ is_git_repo() {
 }
 
 # sync local repository to remote
+# accepts -f parameter to skip last sync check
 gitsync() {
+    FORCE=$1
     if [[ $USEGIT && -n $GITREMOTE ]]; then
-        NOWSYNC=$(date +%s)
-        # LASTSYNC is the last time we synced to the remote, or 0 if it's the first time.
-        LASTSYNC=$($JQ -r '.git["lastpull"] // 0' "$DB")
         [ $PLAIN == false ] && echo "Syncing notes with git on remote \"$GITREMOTE\""
-        SYNCDIFF=$(( ${NOWSYNC} - ${LASTSYNC} ))
-        if (( $SYNCDIFF > $GITSYNCDELAY )); then
-            #more than our delay time has passed. We can sync again.
+        NOWSYNC=$(date +%s)
+        if [[ $FORCE == "-f" ]]; then
             $JQ --arg n "$NOWSYNC" '.git["lastpull"] = $n' "$DB" > $TMPDB
             mv $TMPDB $DB
             cd $BASEDIR
             $GIT pull
         else
-            # Last synced less than $GITSYNCDELAY seconds ago. We shall wait
-            [ $PLAIN == false ] && echo "Last synced less than $GITSYNCDELAY seconds ago. We shall wait"
+            # LASTSYNC is the last time we synced to the remote, or 0 if it's the first time.
+            LASTSYNC=$($JQ -r '.git["lastpull"] // 0' "$DB")
+            SYNCDIFF=$(( ${NOWSYNC} - ${LASTSYNC} ))
+            if (( $SYNCDIFF > $GITSYNCDELAY )); then
+                #more than our delay time has passed. We can sync again.
+                $JQ --arg n "$NOWSYNC" '.git["lastpull"] = $n' "$DB" > $TMPDB
+                mv $TMPDB $DB
+                cd $BASEDIR
+                $GIT pull
+            else
+                # Last synced less than $GITSYNCDELAY seconds ago. We shall wait
+                [ $PLAIN == false ] && echo "Last synced less than $GITSYNCDELAY seconds ago. We shall wait"
+            fi
         fi
     else
         # no git, so we just keep going
