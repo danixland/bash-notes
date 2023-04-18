@@ -268,7 +268,7 @@ gitsync() {
             $JQ --arg n "$NOWSYNC" '.git["lastpull"] = $n' "$DB" > $TMPDB
             mv $TMPDB $DB
             cd $BASEDIR
-            $GIT pull
+            [ $PLAIN == false ] && $GIT pull || $GIT pull -q
         else
             # LASTSYNC is the last time we synced to the remote, or 0 if it's the first time.
             LASTSYNC=$($JQ -r '.git["lastpull"] // 0' "$DB")
@@ -278,7 +278,7 @@ gitsync() {
                 $JQ --arg n "$NOWSYNC" '.git["lastpull"] = $n' "$DB" > $TMPDB
                 mv $TMPDB $DB
                 cd $BASEDIR
-                $GIT pull
+                [ $PLAIN == false ] && $GIT pull || $GIT pull -q
             else
                 # Last synced less than $GITSYNCDELAY seconds ago. We shall wait
                 [ $PLAIN == false ] && echo "Last synced less than $GITSYNCDELAY seconds ago. We shall wait"
