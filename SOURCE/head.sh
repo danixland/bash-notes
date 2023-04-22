@@ -49,11 +49,11 @@ NOTESDIR=${BASEDIR}/notes
 
 # If you want to store your notes in a git repository set this to true
 USEGIT=true
-# Address of your remote repository
+# Address of your remote repository. Without this GIT will refuse to work
 GITREMOTE=${GITREMOTE:-""}
 # How long should we wait (in seconds) between sync on the git remote. Default 3600 (1 hour)
 GITSYNCDELAY=${GITSYNCDELAY:-"3600"}
-# The name of this client. Defaults to the output of hostname
+# The name of this client. If left empty, defaults to the output of hostname
 GITCLIENT=${GITCLIENT:-""}
 
 } # end set_defaults, do not change this line.

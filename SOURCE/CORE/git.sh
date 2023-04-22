@@ -89,13 +89,15 @@ gitremove() {
             $GIT commit -m "$(basename $0) - ${GITCLIENT} removing all notes."
             $GIT push origin master
         else
-            echo "Deleting note ID ${NOTE}"
             local OK=$(check_noteID "$NOTE")
-            cd $BASEDIR
-            $GIT rm notes/${FILE}
-            $GIT add .
-            $GIT commit -m "$(basename $0) - ${GITCLIENT} removing note ID ${NOTE}."
-            $GIT push origin master
+            if [[ "$OK" ]]; then
+                echo "Deleting note ID ${NOTE}"
+                cd $BASEDIR
+                $GIT rm notes/${FILE}
+                $GIT add .
+                $GIT commit -m "$(basename $0) - ${GITCLIENT} removing note ID ${NOTE}."
+                $GIT push origin master
+            fi
         fi
     else
         # no git, so we just keep going

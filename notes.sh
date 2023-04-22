@@ -49,11 +49,11 @@ NOTESDIR=${BASEDIR}/notes
 
 # If you want to store your notes in a git repository set this to true
 USEGIT=true
-# Address of your remote repository
+# Address of your remote repository. Without this GIT will refuse to work
 GITREMOTE=${GITREMOTE:-""}
 # How long should we wait (in seconds) between sync on the git remote. Default 3600 (1 hour)
 GITSYNCDELAY=${GITSYNCDELAY:-"3600"}
-# The name of this client. Defaults to the output of hostname
+# The name of this client. If left empty, defaults to the output of hostname
 GITCLIENT=${GITCLIENT:-""}
 
 } # end set_defaults, do not change this line.
@@ -167,7 +167,7 @@ check_noteID() {
 	IN=$1
 	case $IN in
 		''|*[!0-9]*)
-			return 1
+			false
 			;;
 		*)
 			echo "$IN"
@@ -193,29 +193,37 @@ helptext() {
     echo -e "  -v | --version\t\t: Print version"
     echo -e "  --userconf\t\t\t: Export User config file"
     echo -e "  --backup [<dest>]\t\t: Backup your data in your destination folder"
+    echo -e "  --showconf\t\t\t: Display running options"
+    echo -e "  --sync\t\t\t: Sync notes to git repository"
     echo ""
     echo -e "if a non option is passed and is a valid note ID, the note will be displayed."
 }
 
 configtext() {
     [ $USEGIT ] && GITUSE="enabled" || GITUSE="disabled"
+    if [ -n $GITCLIENT ]; then
+        CLIENTGIT="$( hostname )"
+    else
+        CLIENTGIT="$GITCLIENT"
+    fi
     clear
     echo -e "${BASENAME} configuration is:"
 
-    echo -e "base directory:     ${BASEDIR}/"
-    echo -e "notes archive:      ${NOTESDIR}/"
-    echo -e "notes database:     ${DB}"
-    echo -e "rc file:            $RCFILE"
-    echo -e "debug file:         /tmp/debug_bash-note.log"
-
-    echo -e "text editor:        ${EDITOR}"
-    echo -e "terminal:           ${TERMINAL}"
-    echo -e "jq executable:      ${JQ}"
-    echo -e "PAGER:              ${PAGER}"
-
-    echo -e "GIT use:            ${GITUSE}"
-    echo -e "GIT remote:         ${GITREMOTE}"
-    echo -e "GIT sync delay:     ${GITSYNCDELAY}"
+    echo -e "\tbase directory:     ${BASEDIR}/"
+    echo -e "\tnotes archive:      ${NOTESDIR}/"
+    echo -e "\tnotes database:     ${DB}"
+    echo -e "\trc file:            $RCFILE"
+    echo -e "\tdebug file:         /tmp/debug_bash-note.log"
+    echo
+    echo -e "\ttext editor:        ${EDITOR}"
+    echo -e "\tterminal:           ${TERMINAL}"
+    echo -e "\tjq executable:      ${JQ}"
+    echo -e "\tPAGER:              ${PAGER}"
+    echo
+    echo -e "\tGIT:                ${GITUSE} - ${GIT}"
+    echo -e "\tGIT remote:         ${GITREMOTE}"
+    echo -e "\tGIT sync delay:     ${GITSYNCDELAY}"
+    echo -e "\tGIT client name:    ${CLIENTGIT}"
 }
 
 # this function returns a random 2 words title
@@ -331,13 +339,15 @@ gitremove() {
             $GIT commit -m "$(basename $0) - ${GITCLIENT} removing all notes."
             $GIT push origin master
         else
-            echo "Deleting note ID ${NOTE}"
             local OK=$(check_noteID "$NOTE")
-            cd $BASEDIR
-            $GIT rm notes/${FILE}
-            $GIT add .
-            $GIT commit -m "$(basename $0) - ${GITCLIENT} removing note ID ${NOTE}."
-            $GIT push origin master
+            if [[ "$OK" ]]; then
+                echo "Deleting note ID ${NOTE}"
+                cd $BASEDIR
+                $GIT rm notes/${FILE}
+                $GIT add .
+                $GIT commit -m "$(basename $0) - ${GITCLIENT} removing note ID ${NOTE}."
+                $GIT push origin master
+            fi
         fi
     else
         # no git, so we just keep going

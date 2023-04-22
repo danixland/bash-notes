@@ -26,6 +26,8 @@ notes parameters are:
   -v | --version                : Print version
   --userconf                    : Export User config file
   --backup [<dest>]             : Backup your data in your destination folder
+  --showconf                    : Display running options
+  --sync                        : Sync notes to git repository
 
 if a non option is passed and is a valid note ID, the note will be displayed.
 ```
@@ -49,26 +51,39 @@ You can change all these settings by editing the file:
 
 ```bash
 # Binaries to use
-JQ=${JQ:-/usr/bin/jq}
-EDITOR=${EDITOR:-/usr/bin/vim}
-TERMINAL=${TERMINAL:-/usr/bin/alacritty}
+JQ=/usr/bin/jq
+EDITOR=/usr/bin/vim
+TERMINAL=/usr/bin/alacritty
+# Git binary only used if $USEGIT is true - See below
+GIT=/usr/bin/git
 # add options for your terminal. Remember to add the last option to execute
 # your editor program, otherwise the script will fail.
 # see example in the addnote function
 TERM_OPTS="--class notes --title notes -e "
 # Setting PAGER here overrides whatever is set in your default shell
 # comment this option to use your default pager if set in your shell.
-PAGER=${PAGER:-/usr/bin/more}
+PAGER=/usr/bin/more
 
 # set this to true to have output in plain text
 # or use the -p option on the command line before every other option
 PLAIN=false
 # base directory for program files
-BASEDIR=${BASEDIR:-~/.local/share/bash-notes}
+BASEDIR=~/.local/share/bash-notes
 # notes database in json format
 DB=${BASEDIR}/db.json
 # directory containing the actual notes
 NOTESDIR=${BASEDIR}/notes
+
+### GIT SUPPORT
+
+# If you want to store your notes in a git repository set this to true
+USEGIT=true
+# Address of your remote repository. Without this GIT will refuse to work
+GITREMOTE=""
+# How long should we wait (in seconds) between sync on the git remote. Default 3600 (1 hour)
+GITSYNCDELAY="3600"
+# The name of this client. If left empty, defaults to the output of hostname
+GITCLIENT=""
 ```
 
 Most are pretty self explanatory, the only one that might need clarification is `TERM_OPTS` which is used to set the terminal window that will run the editor while writing the note.
@@ -77,13 +92,17 @@ Special attention is needed when specifying the options, in my case, using [alac
 
 ### Functionalities
 
-bash-notes can:
+This script can:
 
  * write a new note `--add="Your note title"` or in short `-a"Your note title"`
+   - EG. `notes.sh --add="this is a nice note"`
+   If the title is left empty, two random words will be assigned as title.
 
  * modify an existing note `--edit=[note ID]`, short version `-e[note ID]`
+   - EG. `notes.sh --edit=7` will let you modify note n. 7
 
  * delete a note `--delete=[note ID]`, or `-d[note ID]`
+   - EG. `notes.sh --delete=7` will delete note n. 7
 
  * delete all notes `--delete=all`, or `-dall`
 
@@ -91,13 +110,13 @@ bash-notes can:
 
  * display a note `--show=[note ID]`, or `-s[note ID]`.
 
-   It's also possible to simply pass [note ID] as an argument to the script and the corresponding note will be displayed.
+   It's also possible to simply pass `[note ID]` as an argument to the script and the corresponding note will be displayed.
 
    ```bash
    notes.sh 1
    ```
 
-The *note id* is assigned when the note is created, and that's how you refer to the note in the program.
+The *note id* is assigned when the note is created, and that's how you refer to the note in the program. You can see the IDs assigned to each note when listing them.
 
 ##### Plain listing vs "colorful"
 
@@ -147,6 +166,15 @@ And the script will take care of putting everything back where it belongs.
 >
 > *Keep in mind that all your existing notes will be overwritten in the process.*
 
+##### Git
+
+Starting with version 0.4, git support has been added, so now you can sync your notes to a git remote. The program lets you specify a few options like:
+ - your git executable
+ - the remote address
+ - how long before syncing again to the remote
+ - a nickname for the computer where this script is running.
+   This is helpful if you want to sync your notes on multiple computers, to know from which client something has appened to git.
+
 ### Installing
 
 Simply copy the script in your $PATH and make it executable, something like this should work:
@@ -192,9 +220,12 @@ It'd mean so much to receive some feedback, patches if you feel like contributin
 
 ### ChangeLog
 
+ * v0.4 - GIT support. Some UX improvements
+     - Sync all your notes to a git remote.
+
  * v0.3 - backups management. Some UX improvements
-     * create and restore backups of all your notes and settings.
-     * display notes using predefined PAGER variable or define your own program to use. 
+     - create and restore backups of all your notes and settings.
+     - display notes using predefined PAGER variable or define your own program to use. 
 
  * v0.2 - debugging implemented
      - you can now generate a debug log in case something doesn't work
