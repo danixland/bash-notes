@@ -612,7 +612,7 @@ shownote() {
 	fi
 }
 # shellcheck disable=SC2006
-GOPT=$(getopt -o hvplr::a::e::d::s:: --long help,version,list,plain,userconf,showconf,sync::,restore::,backup::,add::,edit::,delete::,show:: -n 'bash-notes' -- "$@")
+GOPT=$(getopt -o hvplr:a:e:d:s: --long help,version,list,plain,userconf,showconf,sync,restore:,backup:,add:,edit:,delete:,show: -n 'bash-notes' -- "$@")
 
 # shellcheck disable=SC2181
 if [ $? != 0 ] ; then helptext >&2 ; exit 1 ; fi
@@ -640,84 +640,34 @@ while true; do
 			exit
 	        ;;
 	    -a | --add )
-			case "$2" in
-				'' )
-					read -r -p "Title: " TITLE
-					;;
-				* )
-					TITLE=$2
-					;;
-			esac
 			shift 2
 			addnote "$TITLE"
 			exit
 	        ;;
 		-e | --edit )
-			case "$2" in
-				'' )
-					read -r -p "Note ID: " NOTE
-					;;
-				* )
-					NOTE=$2
-					;;
-			esac
 			shift 2
 			editnote "$NOTE"
 			exit
 			;;
 		-d | --delete )
-			case "$2" in
-				'' )
-					read -r -p "Note ID: " NOTE
-					;;
-				* )
-					NOTE=$2
-					;;
-			esac
 			shift 2
 			rmnote "$NOTE"
 			exit
 			;;
 		-s | --show )
-			case "$2" in
-				'' )
-					read -r -p "Note ID: " NOTE
-					;;
-				* )
-					NOTE=$2
-					;;
-			esac
 			shift 2
 			shownote "$NOTE"
 			exit
 			;;
 		-r | --restore )
-			case "$2" in
-				'' )
-					read -r -p "Backup Dir: " RDIR
-					;;
-				* )
-					RDIR=$2
-					;;
-			esac
 			shift 2
 			backup_restore $RDIR
 			exit
 			;;
 		--sync )
-			case "$2" in
-				'' )
-					gitsync
-					;;
-				'-f' )
-					gitsync -f
-					;;
-				* )
-					helptext
-					exit
-					;;
-			esac
-			shift 2
+			# I'm forcing it because if you run it manually, chances are that you need to.
+			gitsync -f
+			shift
 			exit
 			;;
 		--userconf )
@@ -732,14 +682,6 @@ while true; do
 			exit
 			;;
 		--backup )
-			case "$2" in
-				'' )
-					read -r -p "Backup Dir: " BDIR
-					;;
-				* )
-					BDIR=$2
-					;;
-			esac
 			shift 2
 			backup_data $BDIR
 			exit
