@@ -6,8 +6,22 @@ addnote() {
 		rm $TMPDB
 	fi
 
+	# RANDOM TITLE
 	RTITLE=$(random_title)
-	[[ -z "$1" ]] && NOTETITLE="$RTITLE" || NOTETITLE="$1"
+
+	if [[ -z $1 ]]; then
+		read -r -p "Title: " TITLE
+		case "$TITLE" in
+			'' )
+				NOTETITLE="$RTITLE"
+				;;
+			* )
+				NOTETITLE=$TITLE
+				;;
+		esac
+	fi
+
+	# [[ -z "$1" ]] && NOTETITLE="$RTITLE" || NOTETITLE="$1"
 	echo "adding new note - \"$NOTETITLE\""
 	# shellcheck disable=SC2086
 	LASTID=$($JQ '.notes[-1].id // 0 | tonumber' $DB)

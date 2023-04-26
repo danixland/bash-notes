@@ -381,8 +381,22 @@ addnote() {
 		rm $TMPDB
 	fi
 
+	# RANDOM TITLE
 	RTITLE=$(random_title)
-	[[ -z "$1" ]] && NOTETITLE="$RTITLE" || NOTETITLE="$1"
+
+	if [[ -z $1 ]]; then
+		read -r -p "Title: " TITLE
+		case "$TITLE" in
+			'' )
+				NOTETITLE="$RTITLE"
+				;;
+			* )
+				NOTETITLE=$TITLE
+				;;
+		esac
+	fi
+
+	# [[ -z "$1" ]] && NOTETITLE="$RTITLE" || NOTETITLE="$1"
 	echo "adding new note - \"$NOTETITLE\""
 	# shellcheck disable=SC2086
 	LASTID=$($JQ '.notes[-1].id // 0 | tonumber' $DB)
@@ -612,7 +626,7 @@ shownote() {
 	fi
 }
 # shellcheck disable=SC2006
-GOPT=$(getopt -o hvplr:a:e:d:s: --long help,version,list,plain,userconf,showconf,sync,restore:,backup:,add:,edit:,delete:,show: -n 'bash-notes' -- "$@")
+GOPT=$(getopt -o hvplr:a::e:d:s: --long help,version,list,plain,userconf,showconf,sync,restore:,backup:,add::,edit:,delete:,show: -n 'bash-notes' -- "$@")
 
 # shellcheck disable=SC2181
 if [ $? != 0 ] ; then helptext >&2 ; exit 1 ; fi
