@@ -640,26 +640,31 @@ while true; do
 			exit
 	        ;;
 	    -a | --add )
+			TITLE=$2
 			shift 2
 			addnote "$TITLE"
 			exit
 	        ;;
 		-e | --edit )
+			NOTE=$2
 			shift 2
 			editnote "$NOTE"
 			exit
 			;;
 		-d | --delete )
+			NOTE=$2
 			shift 2
 			rmnote "$NOTE"
 			exit
 			;;
 		-s | --show )
+			NOTE=$2
 			shift 2
 			shownote "$NOTE"
 			exit
 			;;
 		-r | --restore )
+			RDIR=$2
 			shift 2
 			backup_restore $RDIR
 			exit
@@ -682,6 +687,7 @@ while true; do
 			exit
 			;;
 		--backup )
+			BDIR=$2
 			shift 2
 			backup_data $BDIR
 			exit
