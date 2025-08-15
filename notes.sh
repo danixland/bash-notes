@@ -248,6 +248,13 @@ random_title() {
     echo $OUTPUT
 }
 
+# Keep the application alive until the user decides to exit.
+exitwait() {
+    echo "Press any key to exit.."
+    read -r -n 1
+    exit 0
+}
+
 # check if GITCLIENT has been set or set it to the output of hostname
 if [ -z "$GITCLIENT" ]; then
     GITCLIENT=$( hostname )
@@ -657,25 +664,25 @@ while true; do
 			TITLE=$2
 			shift 2
 			addnote "$TITLE"
-			exit
+			exitwait
 	        ;;
 		-e | --edit )
 			NOTE=$2
 			shift 2
 			editnote "$NOTE"
-			exit
+			exitwait
 			;;
 		-d | --delete )
 			NOTE=$2
 			shift 2
 			rmnote "$NOTE"
-			exit
+			exitwait
 			;;
 		-s | --show )
 			NOTE=$2
 			shift 2
 			shownote "$NOTE"
-			exit
+			exitwait
 			;;
 		-r | --restore )
 			RDIR=$2

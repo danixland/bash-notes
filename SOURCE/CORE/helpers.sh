@@ -84,3 +84,10 @@ random_title() {
     echo $OUTPUT
 }
 
+# Keep the application alive until the user decides to exit.
+exitwait() {
+    echo "Press any key to exit.."
+    read -r -n 1
+    exit 0
+}
+

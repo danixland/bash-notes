@@ -30,25 +30,25 @@ while true; do
 			TITLE=$2
 			shift 2
 			addnote "$TITLE"
-			exit
+			exitwait
 	        ;;
 		-e | --edit )
 			NOTE=$2
 			shift 2
 			editnote "$NOTE"
-			exit
+			exitwait
 			;;
 		-d | --delete )
 			NOTE=$2
 			shift 2
 			rmnote "$NOTE"
-			exit
+			exitwait
 			;;
 		-s | --show )
 			NOTE=$2
 			shift 2
 			shownote "$NOTE"
-			exit
+			exitwait
 			;;
 		-r | --restore )
 			RDIR=$2
