@@ -192,7 +192,7 @@ helptext() {
     echo -e "  -r | --restore=[<dir>]\t: Restore a previous backup from dir"
     echo -e "  -v | --version\t\t: Print version"
     echo -e "  --userconf\t\t\t: Export User config file"
-    echo -e "  --backup [<dest>]\t\t: Backup your data in your destination folder"
+    echo -e "  --backup=<dest>\t\t: Backup your data in your destination folder"
     echo -e "  --showconf\t\t\t: Display running options"
     echo -e "  --sync\t\t\t: Sync notes to git repository"
     echo ""
@@ -200,12 +200,7 @@ helptext() {
 }
 
 configtext() {
-    [ $USEGIT ] && GITUSE="enabled" || GITUSE="disabled"
-    if [ -n $GITCLIENT ]; then
-        CLIENTGIT="$( hostname )"
-    else
-        CLIENTGIT="$GITCLIENT"
-    fi
+    [[ $USEGIT == true ]] && GITUSE="enabled" || GITUSE="disabled"
     clear
     echo -e "${BASENAME} configuration is:"
 
@@ -223,7 +218,7 @@ configtext() {
     echo -e "\tGIT:                ${GITUSE} - ${GIT}"
     echo -e "\tGIT remote:         ${GITREMOTE}"
     echo -e "\tGIT sync delay:     ${GITSYNCDELAY}"
-    echo -e "\tGIT client name:    ${CLIENTGIT}"
+    echo -e "\tGIT client name:    ${GITCLIENT}"
 }
 
 # this function returns a random 2 words title
@@ -276,7 +271,7 @@ is_git_repo() {
 # accepts -f parameter to skip last sync check
 gitsync() {
     FORCE=$1
-    if [[ $USEGIT && -n $GITREMOTE ]]; then
+    if [[ $USEGIT == true && -n $GITREMOTE ]]; then
         [ $PLAIN == false ] && echo "Syncing notes with git on remote \"$GITREMOTE\""
         NOWSYNC=$(date +%s)
         if [[ $FORCE == "-f" ]]; then
@@ -307,12 +302,12 @@ gitsync() {
 
 # add note to git and push it to remote
 gitadd() {
-    if [[ $USEGIT && -n $GITREMOTE ]]; then
+    if [[ $USEGIT == true && -n $GITREMOTE ]]; then
         [ $PLAIN == false ] && echo "Adding note to remote \"$GITREMOTE\""
         cd $BASEDIR
         $GIT add .
         $GIT commit -m "$(basename $0) - adding note from ${GITCLIENT}"
-        $GIT push origin master
+        $GIT push origin HEAD
     else
         # no git, so we just keep going
         true
@@ -321,12 +316,12 @@ gitadd() {
 
 # edited note added to git and pushed it to remote
 gitedit() {
-    if [[ $USEGIT && -n $GITREMOTE ]]; then
+    if [[ $USEGIT == true && -n $GITREMOTE ]]; then
         [ $PLAIN == false ] && echo "Editing note on remote \"$GITREMOTE\""
         cd $BASEDIR
         $GIT add .
         $GIT commit -m "$(basename $0) - ${GITCLIENT} note edited."
-        $GIT push origin master
+        $GIT push origin HEAD
     else
         # no git, so we just keep going
         true
@@ -337,14 +332,14 @@ gitedit() {
 gitremove() {
     NOTE=$1
     FILE=$2
-    if [[ $USEGIT && -n $GITREMOTE ]]; then
+    if [[ $USEGIT == true && -n $GITREMOTE ]]; then
         [ $PLAIN == false ] && echo "Deleting notes from remote \"$GITREMOTE\""
         if [ "all" == $NOTE ];then
             echo "Deleting all notes"
             cd $BASEDIR
             $GIT rm notes/*
             $GIT commit -m "$(basename $0) - ${GITCLIENT} removing all notes."
-            $GIT push origin master
+            $GIT push origin HEAD
         else
             local OK=$(check_noteID "$NOTE")
             if [[ "$OK" ]]; then
@@ -353,7 +348,7 @@ gitremove() {
                 $GIT rm notes/${FILE}
                 $GIT add .
                 $GIT commit -m "$(basename $0) - ${GITCLIENT} removing note ID ${NOTE}."
-                $GIT push origin master
+                $GIT push origin HEAD
             fi
         fi
     else
@@ -363,7 +358,7 @@ gitremove() {
 }
 
 # check for USEGIT and subsequent variables
-if [[ $USEGIT && -n $GITREMOTE ]]; then
+if [[ $USEGIT == true && -n $GITREMOTE ]]; then
     # GIT is a go.
     if ! is_git_repo $BASEDIR; then
         # initializing git repository
@@ -373,9 +368,9 @@ if [[ $USEGIT && -n $GITREMOTE ]]; then
         $GIT add .
         $GIT commit -m "$(basename $0) - initial commit from ${GITCLIENT}"
         $GIT remote add origin $GITREMOTE
-        $GIT push -u origin master
+        $GIT push -u origin HEAD
     fi
-elif [[ $USEGIT && -z $GITREMOTE ]]; then
+elif [[ $USEGIT == true && -z $GITREMOTE ]]; then
     echo "GITREMOTE variable not set. reverting USEGIT to false"
     USEGIT=false
 fi
@@ -401,6 +396,8 @@ addnote() {
 				NOTETITLE=$TITLE
 				;;
 		esac
+	else
+		NOTETITLE=$1
 	fi
 
 	# [[ -z "$1" ]] && NOTETITLE="$RTITLE" || NOTETITLE="$1"
@@ -497,9 +494,7 @@ backup_restore() {
 			fi
 			# restoring git repo subdirectory
 			if [ -d $BACKUPDIR/.git ]; then
-				if [ /bin/ls -A ${BASEDIR}/.git ]; then
-					rm -rf ${BASEDIR}/.git
-				fi
+				rm -rf "${BASEDIR}/.git"
 				cp -r --verbose ${BACKUPDIR}/.git ${BASEDIR}/
 			fi
 			;;

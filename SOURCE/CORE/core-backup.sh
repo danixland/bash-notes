@@ -73,9 +73,7 @@ backup_restore() {
 			fi
 			# restoring git repo subdirectory
 			if [ -d $BACKUPDIR/.git ]; then
-				if [ /bin/ls -A ${BASEDIR}/.git ]; then
-					rm -rf ${BASEDIR}/.git
-				fi
+				rm -rf "${BASEDIR}/.git"
 				cp -r --verbose ${BACKUPDIR}/.git ${BASEDIR}/
 			fi
 			;;

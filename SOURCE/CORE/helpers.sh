@@ -28,7 +28,7 @@ helptext() {
     echo -e "  -r | --restore=[<dir>]\t: Restore a previous backup from dir"
     echo -e "  -v | --version\t\t: Print version"
     echo -e "  --userconf\t\t\t: Export User config file"
-    echo -e "  --backup [<dest>]\t\t: Backup your data in your destination folder"
+    echo -e "  --backup=<dest>\t\t: Backup your data in your destination folder"
     echo -e "  --showconf\t\t\t: Display running options"
     echo -e "  --sync\t\t\t: Sync notes to git repository"
     echo ""
@@ -36,12 +36,7 @@ helptext() {
 }
 
 configtext() {
-    [ $USEGIT ] && GITUSE="enabled" || GITUSE="disabled"
-    if [ -n $GITCLIENT ]; then
-        CLIENTGIT="$( hostname )"
-    else
-        CLIENTGIT="$GITCLIENT"
-    fi
+    [[ $USEGIT == true ]] && GITUSE="enabled" || GITUSE="disabled"
     clear
     echo -e "${BASENAME} configuration is:"
 
@@ -59,7 +54,7 @@ configtext() {
     echo -e "\tGIT:                ${GITUSE} - ${GIT}"
     echo -e "\tGIT remote:         ${GITREMOTE}"
     echo -e "\tGIT sync delay:     ${GITSYNCDELAY}"
-    echo -e "\tGIT client name:    ${CLIENTGIT}"
+    echo -e "\tGIT client name:    ${GITCLIENT}"
 }
 
 # this function returns a random 2 words title

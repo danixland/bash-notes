@@ -25,7 +25,7 @@ notes parameters are:
   -r | --restore=[<dir>]        : Restore a previous backup from dir
   -v | --version                : Print version
   --userconf                    : Export User config file
-  --backup [<dest>]             : Backup your data in your destination folder
+  --backup=<dest>               : Backup your data in your destination folder
   --showconf                    : Display running options
   --sync                        : Sync notes to git repository
 
@@ -239,3 +239,11 @@ It'd mean so much to receive some feedback, patches if you feel like contributin
 ### LICENSE
 
 > bash-notes © 2023 by danix is licensed under CC BY-NC 4.0. To view a copy of this license, visit http://creativecommons.org/licenses/by-nc/4.0/
+
+## Development Approach
+
+This project is developed using AI-assisted tools. Code is generated with the help of AI based on human-provided specifications, design decisions, and iterative feedback.
+
+All contributions are reviewed, tested, and curated by the maintainer before being included in the codebase. AI is used as a productivity and exploration tool, while human oversight remains central to all decisions.
+
+The goal is to combine the flexibility of AI-assisted development with standard open-source practices such as transparency, review, and accountability.

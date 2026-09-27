@@ -19,6 +19,8 @@ addnote() {
 				NOTETITLE=$TITLE
 				;;
 		esac
+	else
+		NOTETITLE=$1
 	fi
 
 	# [[ -z "$1" ]] && NOTETITLE="$RTITLE" || NOTETITLE="$1"
