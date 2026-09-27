@@ -27,6 +27,15 @@ run `make`, and commit both the sources and the rebuilt `notes.sh` together.
    edit, list, remove, show)
 5. `SOURCE/main.sh`: `getopt` parsing and dispatch
 
+`rofi-notes.sh` is a hand-written rofi + kitty front end (show/add/edit/delete
+menus), not part of the build. It calls `notes` from `PATH`.
+
+On the maintainer's machine both scripts are installed as symlinks into the
+repo, so a `make` (or an edit to `rofi-notes.sh`) is live immediately:
+
+    ~/bin/notes               -> notes.sh
+    ~/bin/rofi-notes.sh       -> rofi-notes.sh   (bound to Super+F5..F8 in Hyprland)
+
 Since it is plain concatenation, top-level code runs in that order. A function
 is callable from `main.sh` no matter which file defines it.
 

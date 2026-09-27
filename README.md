@@ -186,6 +186,8 @@ chmod 755 ~/bin/notes.sh
 
 Adapt to your needs as you see fit.
 
+`rofi-notes.sh` is an optional [rofi](https://github.com/davatorium/rofi) front end: run it with no option to pick a note to show, or with `-a`, `-e`, `-d` to add, edit or delete one. It expects notes.sh installed as `notes` in your `$PATH` and opens notes in [kitty](https://sw.kovidgoyal.net/kitty/). Bind it to hotkeys in your window manager.
+
 The first time you run the script it will take care of creating all the files and folders it needs in the standard directories.
 
 ### Debugging
